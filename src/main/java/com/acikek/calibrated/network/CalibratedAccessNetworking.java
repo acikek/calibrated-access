@@ -10,21 +10,22 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.BlockPos;
 
 public class CalibratedAccessNetworking {
 
     public static final Identifier SET_USING_REMOTE = CalibratedAccess.id("set_using_remote");
 
-    public static void s2cSetUsingRemote(ServerPlayerEntity to, boolean usingRemote) {
+    public static void s2cSetUsingRemote(ServerPlayerEntity to, BlockPos syncedPos) {
         PacketByteBuf buf = PacketByteBufs.create();
-        buf.writeBoolean(usingRemote);
+        buf.writeBlockPos(syncedPos);
         ServerPlayNetworking.send(to, SET_USING_REMOTE, buf);
     }
 
     @Environment(EnvType.CLIENT)
     public static void registerClient() {
         ClientPlayNetworking.registerGlobalReceiver(SET_USING_REMOTE, (client, handler, buf, responseSender) ->
-            ((RemoteScreenPlayer) client.player).setUsingRemote(buf.readBoolean())
+            ((RemoteScreenPlayer) client.player).setUsingRemote(buf.readBlockPos())
         );
     }
 }

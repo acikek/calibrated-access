@@ -40,9 +40,9 @@ public class RemoteItem extends Item {
 
     }
 
-    public static void activate(ServerPlayerEntity player, NamedScreenHandlerFactory screen, NbtCompound nbt) {
-        ((RemoteScreenPlayer) player).setUsingRemote(true);
-        CalibratedAccessNetworking.s2cSetUsingRemote(player, true);
+    public static void activate(ServerPlayerEntity player, NamedScreenHandlerFactory screen, BlockPos pos, NbtCompound nbt) {
+        ((RemoteScreenPlayer) player).setUsingRemote(pos);
+        CalibratedAccessNetworking.s2cSetUsingRemote(player, pos);
         player.openHandledScreen(screen);
         nbt.putInt("AccessingTicks", ACCESSING_TICKS);
     }
@@ -63,7 +63,7 @@ public class RemoteItem extends Item {
         ServerPlayerEntity serverPlayer = (ServerPlayerEntity) player;
         BlockPos pos = BlockPos.fromLong(nbt.getLong("SyncedPos"));
         if (targetWorld.getBlockEntity(pos) instanceof NamedScreenHandlerFactory screen) {
-            activate(serverPlayer, screen, nbt);
+            activate(serverPlayer, screen, pos, nbt);
             return true;
         }
         return false;
