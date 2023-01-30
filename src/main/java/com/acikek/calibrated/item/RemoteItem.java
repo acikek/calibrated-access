@@ -77,7 +77,7 @@ public class RemoteItem extends Item implements FabricItem {
             NbtCompound nbt = stack.getOrCreateNbt();
             UseResult result = use(world, user, nbt);
             if (result != UseResult.SUCCESS) {
-                fail(nbt, result == UseResult.DESYNC);
+                fail(nbt, result == UseResult.DESYNC, user);
             }
             return TypedActionResult.pass(stack);
         }
