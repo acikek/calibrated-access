@@ -18,14 +18,14 @@ public class CalibratedAccessNetworking {
 
     public static void s2cSetUsingRemote(ServerPlayerEntity to, BlockPos syncedPos) {
         PacketByteBuf buf = PacketByteBufs.create();
-        buf.writeBlockPos(syncedPos);
+        buf.writeNullable(syncedPos, PacketByteBuf::writeBlockPos);
         ServerPlayNetworking.send(to, SET_USING_REMOTE, buf);
     }
 
     @Environment(EnvType.CLIENT)
     public static void registerClient() {
         ClientPlayNetworking.registerGlobalReceiver(SET_USING_REMOTE, (client, handler, buf, responseSender) ->
-            ((RemoteScreenPlayer) client.player).setUsingRemote(buf.readBlockPos())
+            ((RemoteScreenPlayer) client.player).setUsingRemote(buf.readNullable(PacketByteBuf::readBlockPos))
         );
     }
 }

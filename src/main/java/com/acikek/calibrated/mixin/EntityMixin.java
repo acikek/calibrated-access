@@ -18,6 +18,11 @@ public class EntityMixin implements RemoteScreenPlayer {
         calibrated$syncedPos = syncedPos;
     }
 
+    @Override
+    public boolean isUsingRemote() {
+        return calibrated$syncedPos != null;
+    }
+
     // Screen handlers call this method in some way, just not consistently.
     // Automatic validation - if this call doesn't go through on the server, no slot/GUI actions will be submitted
     @Inject(method = "squaredDistanceTo(DDD)D", cancellable = true, at = @At("HEAD"))

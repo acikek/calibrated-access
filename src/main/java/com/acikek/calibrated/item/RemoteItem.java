@@ -1,10 +1,10 @@
 package com.acikek.calibrated.item;
 
 import com.acikek.calibrated.network.CalibratedAccessNetworking;
+import com.acikek.calibrated.util.RemoteAccessPlayer;
 import com.acikek.calibrated.util.RemoteScreenPlayer;
 import net.fabricmc.fabric.api.item.v1.FabricItem;
 import net.minecraft.block.BlockState;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -30,7 +30,7 @@ public class RemoteItem extends Item implements FabricItem {
         DESYNC
     }
 
-    public static final int ACCESSING_TICKS = 15 * 20;
+    public static final int ACCESS_TICKS = 15 * 20;
 
     public int accesses;
     public boolean interdimensional;
@@ -104,11 +104,15 @@ public class RemoteItem extends Item implements FabricItem {
     }
 
     public void activate(ServerPlayerEntity player, NamedScreenHandlerFactory screen, BlockPos pos, NbtCompound nbt) {
-        ((RemoteScreenPlayer) player).setUsingRemote(pos);
-        CalibratedAccessNetworking.s2cSetUsingRemote(player, pos);
+        RemoteScreenPlayer screenPlayer = ((RemoteScreenPlayer) player);
+        if (!screenPlayer.isUsingRemote()) {
+            screenPlayer.setUsingRemote(pos);
+            CalibratedAccessNetworking.s2cSetUsingRemote(player, pos);
+        }
         player.openHandledScreen(screen);
-        if (!unlimited && !nbt.contains("AccessingTicks")) {
-            nbt.putInt("AccessingTicks", ACCESSING_TICKS);
+        RemoteAccessPlayer accessPlayer = ((RemoteAccessPlayer) player);
+        if (!unlimited && !accessPlayer.isAccessing()) {
+            accessPlayer.setAccessTicks(ACCESS_TICKS);
             nbt.putInt("Accesses", nbt.getInt("Accesses") - 1);
         }
     }
@@ -121,7 +125,7 @@ public class RemoteItem extends Item implements FabricItem {
         }
     }
 
-    @Override
+    /*@Override
     public void inventoryTick(ItemStack stack, World world, Entity entity, int slot, boolean selected) {
         if (!stack.hasNbt()) {
             return;
@@ -143,11 +147,11 @@ public class RemoteItem extends Item implements FabricItem {
             return true;
         }
         nbt.putInt("AccessingTicks", ticks);
-    }
+    }*/
 
     @Override
     public boolean allowNbtUpdateAnimation(PlayerEntity player, Hand hand, ItemStack oldStack, ItemStack newStack) {
-        return oldStack.hasNbt() && newStack.hasNbt()
-                && oldStack.getOrCreateNbt().getInt("AccessingTicks") == newStack.getOrCreateNbt().getInt("AccessingTicks");
+        return false; /*oldStack.hasNbt() && newStack.hasNbt()
+                && oldStack.getOrCreateNbt().getInt("AccessingTicks") == newStack.getOrCreateNbt().getInt("AccessingTicks");*/
     }
 }

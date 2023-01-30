@@ -6,7 +6,5 @@ public interface RemoteScreenPlayer {
 
     void setUsingRemote(BlockPos syncedPos);
 
-    default void setIdling() {
-        setUsingRemote(null);
-    }
+    boolean isUsingRemote();
 }
