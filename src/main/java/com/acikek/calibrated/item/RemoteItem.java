@@ -5,6 +5,7 @@ import com.acikek.calibrated.util.RemoteAccessPlayer;
 import com.acikek.calibrated.util.RemoteScreenPlayer;
 import net.fabricmc.fabric.api.item.v1.FabricItem;
 import net.minecraft.block.BlockState;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -31,6 +32,7 @@ public class RemoteItem extends Item implements FabricItem {
     }
 
     public static final int ACCESS_TICKS = 15 * 20;
+    public static final int STATUS_TICKS = 3 * 20;
 
     public int accesses;
     public boolean interdimensional;
@@ -103,6 +105,7 @@ public class RemoteItem extends Item implements FabricItem {
         return UseResult.DESYNC;
     }
 
+    // TODO handle unlimited
     public void activate(ServerPlayerEntity player, NamedScreenHandlerFactory screen, BlockPos pos, NbtCompound nbt) {
         RemoteScreenPlayer screenPlayer = ((RemoteScreenPlayer) player);
         if (!screenPlayer.isUsingRemote()) {
@@ -112,8 +115,9 @@ public class RemoteItem extends Item implements FabricItem {
         player.openHandledScreen(screen);
         RemoteAccessPlayer accessPlayer = ((RemoteAccessPlayer) player);
         if (!unlimited && !accessPlayer.isAccessing()) {
-            accessPlayer.setAccessTicks(ACCESS_TICKS);
             nbt.putInt("Accesses", nbt.getInt("Accesses") - 1);
+            accessPlayer.setAccessTicks(ACCESS_TICKS);
+            nbt.putInt("VisualTicks", ACCESS_TICKS);
         }
     }
 
@@ -123,31 +127,31 @@ public class RemoteItem extends Item implements FabricItem {
             nbt.remove("SyncedWorld");
             nbt.remove("SyncedNameKey");
         }
+        nbt.putInt("VisualTicks", STATUS_TICKS);
+        nbt.putInt("CustomModelData", 2);
     }
 
-    /*@Override
+    @Override
     public void inventoryTick(ItemStack stack, World world, Entity entity, int slot, boolean selected) {
         if (!stack.hasNbt()) {
             return;
         }
-        NbtCompound nbt = stack.getOrCreateNbt();
-        if (handleAccessingTicks(nbt) && entity instanceof ServerPlayerEntity player) {
-            // TODO wait this could fail if they just drop the item
-        }
+        handleVisualTicks(stack.getOrCreateNbt());
     }
 
-    public static boolean handleAccessingTicks(NbtCompound nbt) {
-        if (!nbt.contains("AccessingTicks")) {
-            return false;
+    public static void handleVisualTicks(NbtCompound nbt) {
+        if (!nbt.contains("VisualTicks")) {
+            return;
         }
-        int ticks = nbt.getInt("AccessingTicks");
+        int ticks = nbt.getInt("VisualTicks");
         ticks--;
         if (ticks == 0) {
-            nbt.remove("AccessingTicks");
-            return true;
+            nbt.remove("VisualTicks");
+            nbt.remove("CustomModelData");
+            return;
         }
-        nbt.putInt("AccessingTicks", ticks);
-    }*/
+        nbt.putInt("VisualTicks", ticks);
+    }
 
     @Override
     public boolean allowNbtUpdateAnimation(PlayerEntity player, Hand hand, ItemStack oldStack, ItemStack newStack) {
