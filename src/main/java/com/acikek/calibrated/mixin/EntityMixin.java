@@ -15,7 +15,6 @@ public class EntityMixin implements RemoteScreenPlayer {
 
     @Override
     public void setUsingRemote(BlockPos syncedPos) {
-        System.out.println("setUsingRemote " + syncedPos);
         calibrated$syncedPos = syncedPos;
     }
 
