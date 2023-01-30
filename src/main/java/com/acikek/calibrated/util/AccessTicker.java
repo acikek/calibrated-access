@@ -1,6 +1,6 @@
 package com.acikek.calibrated.util;
 
-public interface RemoteAccessPlayer {
+public interface AccessTicker {
 
     void setAccessTicks(int accessTicks);
 

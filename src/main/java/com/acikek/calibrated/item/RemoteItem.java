@@ -1,8 +1,8 @@
 package com.acikek.calibrated.item;
 
 import com.acikek.calibrated.network.CalibratedAccessNetworking;
-import com.acikek.calibrated.util.RemoteAccessPlayer;
-import com.acikek.calibrated.util.RemoteScreenPlayer;
+import com.acikek.calibrated.util.AccessTicker;
+import com.acikek.calibrated.util.RemoteUser;
 import net.fabricmc.fabric.api.item.v1.FabricItem;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
@@ -22,6 +22,8 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.World;
+
+import java.util.UUID;
 
 public class RemoteItem extends Item implements FabricItem {
 
@@ -50,16 +52,19 @@ public class RemoteItem extends Item implements FabricItem {
         BlockPos pos = context.getBlockPos();
         if (context.getWorld().getBlockEntity(pos) instanceof NamedScreenHandlerFactory) {
             NbtCompound nbt = context.getStack().getOrCreateNbt();
-            calibrate(nbt, context.getWorld(), pos, context.getWorld().getBlockState(pos));
+            calibrate(nbt, context.getPlayer(), context.getWorld(), pos, context.getWorld().getBlockState(pos));
             return ActionResult.SUCCESS;
         }
         return super.useOnBlock(context);
     }
 
-    public void calibrate(NbtCompound nbt, World world, BlockPos pos, BlockState state) {
+    public void calibrate(NbtCompound nbt, PlayerEntity player, World world, BlockPos pos, BlockState state) {
         nbt.putLong("SyncedPos", pos.asLong());
         nbt.putString("SyncedWorld", world.getRegistryKey().getValue().toString());
         nbt.putString("SyncedNameKey", state.getBlock().asItem().getTranslationKey());
+        UUID session = UUID.randomUUID();
+        nbt.putUuid("Session", session);
+        ((RemoteUser) player).setSession(session);
         if (!unlimited) {
             nbt.putInt("Accesses", accesses);
         }
@@ -88,44 +93,56 @@ public class RemoteItem extends Item implements FabricItem {
         if (world.isClient() || !canTryAccess(nbt)) {
             return UseResult.FAIL;
         }
+        // Prevents a player from using more than one remote at once
+        RemoteUser remoteUser = (RemoteUser) player;
+        if (!remoteUser.hasSession() || !remoteUser.getSession().equals(nbt.getUuid("Session"))) {
+            return UseResult.FAIL;
+        }
+        // Prevents interdimensional accesses for remotes that do not have this ability
         Identifier worldId = new Identifier(nbt.getString("SyncedWorld"));
         if (!world.getRegistryKey().getValue().equals(worldId) && !interdimensional) {
             return UseResult.FAIL;
         }
+        // Prevents accesses from invalid worlds
         ServerWorld targetWorld = ((ServerWorld) world).getServer().getWorld(RegistryKey.of(Registry.WORLD_KEY, worldId));
         if (targetWorld == null) {
             return UseResult.FAIL;
         }
         ServerPlayerEntity serverPlayer = (ServerPlayerEntity) player;
+        // Prevents accesses to non-screen blocks (if they have been broken)
+        // This is considered irreversible and will desync the remote
         BlockPos pos = BlockPos.fromLong(nbt.getLong("SyncedPos"));
         if (targetWorld.getBlockEntity(pos) instanceof NamedScreenHandlerFactory screen) {
-            activate(serverPlayer, screen, pos, nbt);
+            activate(nbt, serverPlayer, screen, pos);
             return UseResult.SUCCESS;
         }
         return UseResult.DESYNC;
     }
 
     // TODO handle unlimited
-    public void activate(ServerPlayerEntity player, NamedScreenHandlerFactory screen, BlockPos pos, NbtCompound nbt) {
-        RemoteScreenPlayer screenPlayer = ((RemoteScreenPlayer) player);
-        if (!screenPlayer.isUsingRemote()) {
-            screenPlayer.setUsingRemote(pos);
+    public void activate(NbtCompound nbt, ServerPlayerEntity player, NamedScreenHandlerFactory screen, BlockPos pos) {
+        RemoteUser remoteUser = ((RemoteUser) player);
+        if (!remoteUser.isUsingRemote()) {
+            remoteUser.setUsingRemote(pos);
             CalibratedAccessNetworking.s2cSetUsingRemote(player, pos);
         }
         player.openHandledScreen(screen);
-        RemoteAccessPlayer accessPlayer = ((RemoteAccessPlayer) player);
+        AccessTicker accessPlayer = ((AccessTicker) player);
         if (!unlimited && !accessPlayer.isAccessing()) {
             nbt.putInt("Accesses", nbt.getInt("Accesses") - 1);
             accessPlayer.setAccessTicks(ACCESS_TICKS);
             nbt.putInt("VisualTicks", ACCESS_TICKS);
+            nbt.putInt("CustomModelData", 1);
         }
     }
 
-    public static void fail(NbtCompound nbt, boolean desync) {
+    public static void fail(NbtCompound nbt, boolean desync, PlayerEntity player) {
         if (desync) {
             nbt.remove("SyncedPos");
             nbt.remove("SyncedWorld");
             nbt.remove("SyncedNameKey");
+            nbt.remove("Session");
+            ((RemoteUser) player).setSession(null);
         }
         nbt.putInt("VisualTicks", STATUS_TICKS);
         nbt.putInt("CustomModelData", 2);

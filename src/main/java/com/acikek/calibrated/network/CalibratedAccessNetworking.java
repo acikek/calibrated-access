@@ -1,7 +1,7 @@
 package com.acikek.calibrated.network;
 
 import com.acikek.calibrated.CalibratedAccess;
-import com.acikek.calibrated.util.RemoteScreenPlayer;
+import com.acikek.calibrated.util.RemoteUser;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -25,7 +25,7 @@ public class CalibratedAccessNetworking {
     @Environment(EnvType.CLIENT)
     public static void registerClient() {
         ClientPlayNetworking.registerGlobalReceiver(SET_USING_REMOTE, (client, handler, buf, responseSender) ->
-            ((RemoteScreenPlayer) client.player).setUsingRemote(buf.readNullable(PacketByteBuf::readBlockPos))
+            ((RemoteUser) client.player).setUsingRemote(buf.readNullable(PacketByteBuf::readBlockPos))
         );
     }
 }
