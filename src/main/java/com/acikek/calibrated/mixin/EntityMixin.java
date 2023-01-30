@@ -11,7 +11,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(Entity.class)
 public class EntityMixin implements RemoteScreenPlayer {
 
-
     private BlockPos calibrated$syncedPos;
 
     @Override
