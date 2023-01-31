@@ -14,10 +14,8 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.TypedActionResult;
+import net.minecraft.text.Text;
+import net.minecraft.util.*;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.util.registry.RegistryKey;
@@ -28,9 +26,20 @@ import java.util.UUID;
 public class RemoteItem extends Item implements FabricItem {
 
     public enum UseResult {
-        SUCCESS,
-        FAIL,
-        DESYNC
+
+        SUCCESS(false),
+        CANNOT_ACCESS(true),
+        INVALID_SESSION(true),
+        INVALID_WORLD(true),
+        DESYNC(true);
+
+        public final Text message;
+
+        UseResult(boolean error) {
+            message = !error ? null
+                    : Text.translatable("error.calibrated." + name().toLowerCase())
+                            .formatted(Formatting.RED);
+        }
     }
 
     public static final int ACCESS_TICKS = 15 * 20;
@@ -73,11 +82,13 @@ public class RemoteItem extends Item implements FabricItem {
     @Override
     public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
         ItemStack stack = user.getStackInHand(hand);
-        if (stack.hasNbt()) {
+        // Run on server to validate world and guarantee proper block entity fetching.
+        if (stack.hasNbt() && !world.isClient()) {
             NbtCompound nbt = stack.getOrCreateNbt();
             UseResult result = use(world, user, nbt);
             if (result != UseResult.SUCCESS) {
                 fail(nbt, result == UseResult.DESYNC, user);
+                user.sendMessage(result.message, true);
             }
             return TypedActionResult.pass(stack);
         }
@@ -89,24 +100,23 @@ public class RemoteItem extends Item implements FabricItem {
     }
 
     public UseResult use(World world, PlayerEntity player, NbtCompound nbt) {
-        // Run on server to validate world and guarantee proper block entity fetching.
-        if (world.isClient() || !canTryAccess(nbt)) {
-            return UseResult.FAIL;
+        if (!canTryAccess(nbt)) {
+            return UseResult.CANNOT_ACCESS;
         }
         // Prevents a player from using more than one remote at once
         RemoteUser remoteUser = (RemoteUser) player;
         if (!remoteUser.hasSession() || !remoteUser.getSession().equals(nbt.getUuid("Session"))) {
-            return UseResult.FAIL;
+            return UseResult.INVALID_SESSION;
         }
         // Prevents interdimensional accesses for remotes that do not have this ability
         Identifier worldId = new Identifier(nbt.getString("SyncedWorld"));
         if (!world.getRegistryKey().getValue().equals(worldId) && !interdimensional) {
-            return UseResult.FAIL;
+            return UseResult.INVALID_WORLD;
         }
         // Prevents accesses from invalid worlds
         ServerWorld targetWorld = ((ServerWorld) world).getServer().getWorld(RegistryKey.of(Registry.WORLD_KEY, worldId));
         if (targetWorld == null) {
-            return UseResult.FAIL;
+            return UseResult.INVALID_WORLD;
         }
         ServerPlayerEntity serverPlayer = (ServerPlayerEntity) player;
         // Prevents accesses to non-screen blocks (if they have been broken)
@@ -128,10 +138,15 @@ public class RemoteItem extends Item implements FabricItem {
         }
         player.openHandledScreen(screen);
         AccessTicker accessPlayer = ((AccessTicker) player);
-        if (!unlimited && !accessPlayer.isAccessing()) {
-            nbt.putInt("Accesses", nbt.getInt("Accesses") - 1);
-            accessPlayer.setAccessTicks(ACCESS_TICKS);
-            nbt.putInt("VisualTicks", ACCESS_TICKS);
+        System.out.println(accessPlayer.getAccessTicks());
+        // Players can remove an activated remote from their inventory, and this will stop inventoryTick calls,
+        // but that's purely visual and the valuable ticking happens in the server player mixin.
+        if (unlimited || !accessPlayer.isAccessing()) {
+            if (!unlimited) {
+                nbt.putInt("Accesses", nbt.getInt("Accesses") - 1);
+                accessPlayer.setAccessTicks(ACCESS_TICKS);
+            }
+            nbt.putInt("VisualTicks", unlimited ? STATUS_TICKS : ACCESS_TICKS);
             nbt.putInt("CustomModelData", 1);
         }
     }
