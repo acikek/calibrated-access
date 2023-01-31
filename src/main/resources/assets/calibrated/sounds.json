@@ -1,0 +1,8 @@
+{
+  "item.remote_accessor.sync": {
+    "subtitle": "subtitles.calibrated.remote_accessor.sync",
+    "sounds": [
+      "calibrated:sync"
+    ]
+  }
+}
