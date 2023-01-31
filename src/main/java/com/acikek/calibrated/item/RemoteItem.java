@@ -187,7 +187,28 @@ public class RemoteItem extends Item implements FabricItem {
 
     @Override
     public boolean allowNbtUpdateAnimation(PlayerEntity player, Hand hand, ItemStack oldStack, ItemStack newStack) {
-        return false; /*oldStack.hasNbt() && newStack.hasNbt()
-                && oldStack.getOrCreateNbt().getInt("AccessingTicks") == newStack.getOrCreateNbt().getInt("AccessingTicks");*/
+        return false;
+    }
+
+    @Override
+    public boolean isItemBarVisible(ItemStack stack) {
+        return !unlimited && stack.hasNbt() && canTryAccess(stack.getOrCreateNbt());
+    }
+
+    @Override
+    public int getItemBarStep(ItemStack stack) {
+        if (!stack.hasNbt()) {
+            return 0;
+        }
+        NbtCompound nbt = stack.getOrCreateNbt();
+        if (!nbt.contains("Accesses")) {
+            return 0;
+        }
+        return (int) (((double) nbt.getInt("Accesses") / accesses) * 13.0);
+    }
+
+    @Override
+    public int getItemBarColor(ItemStack stack) {
+        return 6743789;
     }
 }
