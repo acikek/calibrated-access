@@ -4,5 +4,20 @@
     "sounds": [
       "calibrated:sync"
     ]
+  },
+  "item.remote_accessor.open": {
+    "subtitle": "subtitles.calibrated.remote_accessor.open",
+    "sounds": [
+      "calibrated:open/open1",
+      "calibrated:open/open2",
+      "calibrated:open/open3"
+    ]
+  },
+  "item.remote_accessor.fail": {
+    "subtitle": "subtitles.calibrated.remote_accessor.fail",
+    "sounds": [
+      "calibrated:fail/fail1",
+      "calibrated:fail/fail2"
+    ]
   }
 }

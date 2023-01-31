@@ -1,6 +1,7 @@
 package com.acikek.calibrated.item;
 
 import com.acikek.calibrated.network.CalibratedAccessNetworking;
+import com.acikek.calibrated.sound.ModSoundEvents;
 import com.acikek.calibrated.util.AccessTicker;
 import com.acikek.calibrated.util.RemoteUser;
 import net.fabricmc.fabric.api.item.v1.FabricItem;
@@ -14,6 +15,8 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvent;
 import net.minecraft.text.Text;
 import net.minecraft.util.*;
 import net.minecraft.util.math.BlockPos;
@@ -77,6 +80,7 @@ public class RemoteItem extends Item implements FabricItem {
         if (!unlimited) {
             nbt.putInt("Accesses", accesses);
         }
+        playSound(ModSoundEvents.REMOTE_SYNC, 0.85f + world.random.nextFloat() * 0.3f, player, world);
     }
 
     @Override
@@ -87,7 +91,7 @@ public class RemoteItem extends Item implements FabricItem {
             NbtCompound nbt = stack.getOrCreateNbt();
             UseResult result = use(world, user, nbt);
             if (result != UseResult.SUCCESS) {
-                fail(nbt, result == UseResult.DESYNC, user);
+                fail(nbt, result == UseResult.DESYNC, user, world);
                 user.sendMessage(result.message, true);
             }
             return TypedActionResult.pass(stack);
@@ -123,14 +127,14 @@ public class RemoteItem extends Item implements FabricItem {
         // This is considered irreversible and will desync the remote
         BlockPos pos = BlockPos.fromLong(nbt.getLong("SyncedPos"));
         if (targetWorld.getBlockEntity(pos) instanceof NamedScreenHandlerFactory screen) {
-            activate(nbt, serverPlayer, screen, pos);
+            activate(nbt, serverPlayer, world, screen, pos);
             return UseResult.SUCCESS;
         }
         return UseResult.DESYNC;
     }
 
     // TODO handle unlimited
-    public void activate(NbtCompound nbt, ServerPlayerEntity player, NamedScreenHandlerFactory screen, BlockPos pos) {
+    public void activate(NbtCompound nbt, ServerPlayerEntity player, World world, NamedScreenHandlerFactory screen, BlockPos pos) {
         RemoteUser remoteUser = ((RemoteUser) player);
         if (!remoteUser.isUsingRemote()) {
             remoteUser.setUsingRemote(pos);
@@ -138,7 +142,6 @@ public class RemoteItem extends Item implements FabricItem {
         }
         player.openHandledScreen(screen);
         AccessTicker accessPlayer = ((AccessTicker) player);
-        System.out.println(accessPlayer.getAccessTicks());
         // Players can remove an activated remote from their inventory, and this will stop inventoryTick calls,
         // but that's purely visual and the valuable ticking happens in the server player mixin.
         if (unlimited || !accessPlayer.isAccessing()) {
@@ -149,9 +152,10 @@ public class RemoteItem extends Item implements FabricItem {
             nbt.putInt("VisualTicks", unlimited ? STATUS_TICKS : ACCESS_TICKS);
             nbt.putInt("CustomModelData", 1);
         }
+        playSound(ModSoundEvents.REMOTE_OPEN, 1.0f, player, world);
     }
 
-    public static void fail(NbtCompound nbt, boolean desync, PlayerEntity player) {
+    public static void fail(NbtCompound nbt, boolean desync, PlayerEntity player, World world) {
         if (desync) {
             nbt.remove("SyncedPos");
             nbt.remove("SyncedWorld");
@@ -161,6 +165,12 @@ public class RemoteItem extends Item implements FabricItem {
         }
         nbt.putInt("VisualTicks", STATUS_TICKS);
         nbt.putInt("CustomModelData", 2);
+        playSound(ModSoundEvents.REMOTE_FAIL, 1.0f, player, world);
+    }
+
+    public static void playSound(SoundEvent event, float pitch, PlayerEntity player, World world) {
+        world.playSound(player, player.getX(), player.getY(), player.getZ(), event, SoundCategory.PLAYERS, 1.0f, pitch);
+        player.playSound(event, SoundCategory.MASTER, 1.0f, pitch);
     }
 
     @Override

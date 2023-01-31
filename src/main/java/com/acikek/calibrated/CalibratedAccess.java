@@ -1,6 +1,7 @@
 package com.acikek.calibrated;
 
 import com.acikek.calibrated.item.ModItems;
+import com.acikek.calibrated.sound.ModSoundEvents;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.itemgroup.FabricItemGroupBuilder;
 import net.minecraft.item.ItemGroup;
@@ -21,5 +22,6 @@ public class CalibratedAccess implements ModInitializer {
     @Override
     public void onInitialize() {
         ModItems.register();
+        ModSoundEvents.register();
     }
 }
