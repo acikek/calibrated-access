@@ -19,7 +19,8 @@ public class SlotMixin {
 
     @Inject(method = "canInsert", cancellable = true, at = @At("HEAD"))
     private void calibrated$disableInsertIfAccessing(ItemStack stack, CallbackInfoReturnable<Boolean> cir) {
-        if (stack.getItem() instanceof RemoteItem && stack.hasNbt() && stack.getOrCreateNbt().contains("AccessingTicks")) {
+        // VisualTicks can outlast actual accessing ticks, but it's not very important
+        if (stack.getItem() instanceof RemoteItem && stack.hasNbt() && stack.getOrCreateNbt().contains("VisualTicks")) {
             cir.setReturnValue(inventory instanceof PlayerInventory);
         }
     }
