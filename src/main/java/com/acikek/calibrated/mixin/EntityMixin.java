@@ -16,11 +16,16 @@ import java.util.UUID;
 public class EntityMixin implements RemoteUser {
 
     private BlockPos calibrated$syncedPos;
-    private UUID calibrated$session;
+    // The current session is set whenever a player calibrates with a remote. The "using" session is set whenever
+    // a player *uses* a remote; a player can use a remote, calibrate with another remote, and then try to use the new one,
+    // in which case these sessions would differ.
+    private UUID calibrated$usingSession;
+    private UUID calibrated$currentSession;
 
     @Override
-    public void setUsingRemote(BlockPos syncedPos) {
+    public void setUsingRemote(BlockPos syncedPos, UUID session) {
         calibrated$syncedPos = syncedPos;
+        calibrated$usingSession = session;
     }
 
     @Override
@@ -30,12 +35,12 @@ public class EntityMixin implements RemoteUser {
 
     @Override
     public void setSession(UUID uuid) {
-        calibrated$session = uuid;
+        calibrated$currentSession = uuid;
     }
 
     @Override
     public UUID getSession() {
-        return calibrated$session;
+        return calibrated$currentSession;
     }
 
     // Screen handlers call this method in some way, just not consistently.
@@ -57,9 +62,10 @@ public class EntityMixin implements RemoteUser {
     private void calibrated$writeNbt(NbtCompound nbt, CallbackInfoReturnable<NbtCompound> cir) {
         if (calibrated$syncedPos != null) {
             nbt.putLong("calibrated$SyncedPos", calibrated$syncedPos.asLong());
+            nbt.putUuid("calibrated$UsingSession", calibrated$usingSession);
         }
-        if (calibrated$session != null) {
-            nbt.putUuid("calibrated$Session", calibrated$session);
+        if (calibrated$currentSession != null) {
+            nbt.putUuid("calibrated$CurrentSession", calibrated$currentSession);
         }
     }
 
@@ -68,9 +74,10 @@ public class EntityMixin implements RemoteUser {
         long syncedPosLong = nbt.getLong("calibrated$SyncedPos");
         if (syncedPosLong != 0L) {
             calibrated$syncedPos = BlockPos.fromLong(syncedPosLong);
+            calibrated$usingSession = nbt.getUuid("calibrated$UsingSession");
         }
-        if (nbt.containsUuid("calibrated$Session")) {
-            calibrated$session = nbt.getUuid("calibrated$Session");
+        if (nbt.containsUuid("calibrated$CurrentSession")) {
+            calibrated$currentSession = nbt.getUuid("calibrated$CurrentSession");
         }
     }
 }

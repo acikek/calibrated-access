@@ -6,7 +6,7 @@ import java.util.UUID;
 
 public interface RemoteUser {
 
-    void setUsingRemote(BlockPos syncedPos);
+    void setUsingRemote(BlockPos syncedPos, UUID session);
 
     boolean isUsingRemote();
 

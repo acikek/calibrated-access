@@ -133,12 +133,12 @@ public class RemoteItem extends Item implements FabricItem {
         return UseResult.DESYNC;
     }
 
-    // TODO handle unlimited
+    // TODO handle different using session/current session
     public void activate(NbtCompound nbt, ServerPlayerEntity player, World world, NamedScreenHandlerFactory screen, BlockPos pos) {
         RemoteUser remoteUser = ((RemoteUser) player);
         if (!remoteUser.isUsingRemote()) {
-            remoteUser.setUsingRemote(pos);
-            CalibratedAccessNetworking.s2cSetUsingRemote(player, pos);
+            remoteUser.setUsingRemote(pos, remoteUser.getSession());
+            CalibratedAccessNetworking.s2cSetUsingRemote(player, pos, remoteUser.getSession());
         }
         player.openHandledScreen(screen);
         AccessTicker accessPlayer = ((AccessTicker) player);

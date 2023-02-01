@@ -33,8 +33,8 @@ public class ServerPlayerEntityMixin implements AccessTicker {
         calibrated$accessTicks--;
         if (calibrated$accessTicks == 0) {
             ServerPlayerEntity player = (ServerPlayerEntity) (Object) this;
-            ((RemoteUser) player).setUsingRemote(null);
-            CalibratedAccessNetworking.s2cSetUsingRemote(player, null);
+            ((RemoteUser) player).setUsingRemote(null, null);
+            CalibratedAccessNetworking.s2cSetUsingRemote(player, null, null);
         }
     }
 
