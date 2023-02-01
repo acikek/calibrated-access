@@ -152,10 +152,11 @@ public class RemoteItem extends Item implements FabricItem {
             nbt.putInt("VisualTicks", unlimited ? STATUS_TICKS : ACCESS_TICKS);
             nbt.putInt("CustomModelData", 1);
         }
+        player.getItemCooldownManager().set(this, 5);
         playSound(ModSoundEvents.REMOTE_OPEN, 1.0f, player, world);
     }
 
-    public static void fail(NbtCompound nbt, boolean desync, PlayerEntity player, World world) {
+    public void fail(NbtCompound nbt, boolean desync, PlayerEntity player, World world) {
         if (desync) {
             nbt.remove("SyncedPos");
             nbt.remove("SyncedWorld");
@@ -165,6 +166,7 @@ public class RemoteItem extends Item implements FabricItem {
         }
         nbt.putInt("VisualTicks", STATUS_TICKS);
         nbt.putInt("CustomModelData", 2);
+        player.getItemCooldownManager().set(this, 20);
         playSound(ModSoundEvents.REMOTE_FAIL, 1.0f, player, world);
     }
 
