@@ -1,0 +1,20 @@
+{
+  "parent": "item/generated",
+  "textures": {
+    "layer0": "calibrated:item/skilled_accessor"
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "custom_model_data": 1
+      },
+      "model": "calibrated:item/skilled_accessor_activated"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2
+      },
+      "model": "calibrated:item/skilled_accessor_fail"
+    }
+  ]
+}

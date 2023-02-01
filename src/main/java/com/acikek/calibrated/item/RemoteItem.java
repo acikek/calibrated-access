@@ -152,7 +152,6 @@ public class RemoteItem extends Item implements FabricItem {
             nbt.putInt("VisualTicks", unlimited ? STATUS_TICKS : ACCESS_TICKS);
             nbt.putInt("CustomModelData", 1);
         }
-        player.getItemCooldownManager().set(this, 5);
         playSound(ModSoundEvents.REMOTE_OPEN, 1.0f, player, world);
     }
 
