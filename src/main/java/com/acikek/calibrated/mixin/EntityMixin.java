@@ -39,6 +39,11 @@ public class EntityMixin implements RemoteUser {
     }
 
     @Override
+    public UUID getUsingSession() {
+        return calibrated$usingSession;
+    }
+
+    @Override
     public UUID getSession() {
         return calibrated$currentSession;
     }

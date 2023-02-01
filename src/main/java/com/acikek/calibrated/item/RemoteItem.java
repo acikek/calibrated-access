@@ -87,7 +87,7 @@ public class RemoteItem extends Item implements FabricItem {
     public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
         ItemStack stack = user.getStackInHand(hand);
         // Run on server to validate world and guarantee proper block entity fetching.
-        if (stack.hasNbt() && !world.isClient()) {
+        if (!world.isClient()) {
             NbtCompound nbt = stack.getOrCreateNbt();
             UseResult result = use(world, user, nbt);
             if (result != UseResult.SUCCESS) {
@@ -136,7 +136,8 @@ public class RemoteItem extends Item implements FabricItem {
     // TODO handle different using session/current session
     public void activate(NbtCompound nbt, ServerPlayerEntity player, World world, NamedScreenHandlerFactory screen, BlockPos pos) {
         RemoteUser remoteUser = ((RemoteUser) player);
-        if (!remoteUser.isUsingRemote()) {
+        boolean isDifferentRemote = remoteUser.isUsingRemote() && !remoteUser.getUsingSession().equals(nbt.getUuid("Session"));
+        if (!remoteUser.isUsingRemote() || isDifferentRemote) {
             remoteUser.setUsingRemote(pos, remoteUser.getSession());
             CalibratedAccessNetworking.s2cSetUsingRemote(player, pos, remoteUser.getSession());
         }
@@ -144,7 +145,7 @@ public class RemoteItem extends Item implements FabricItem {
         AccessTicker accessPlayer = ((AccessTicker) player);
         // Players can remove an activated remote from their inventory, and this will stop inventoryTick calls,
         // but that's purely visual and the valuable ticking happens in the server player mixin.
-        if (unlimited || !accessPlayer.isAccessing()) {
+        if (unlimited || !accessPlayer.isAccessing() || isDifferentRemote) {
             if (!unlimited) {
                 nbt.putInt("Accesses", nbt.getInt("Accesses") - 1);
                 accessPlayer.setAccessTicks(ACCESS_TICKS);
@@ -165,7 +166,7 @@ public class RemoteItem extends Item implements FabricItem {
         }
         nbt.putInt("VisualTicks", STATUS_TICKS);
         nbt.putInt("CustomModelData", 2);
-        player.getItemCooldownManager().set(this, 20);
+        player.getItemCooldownManager().set(this, 40);
         playSound(ModSoundEvents.REMOTE_FAIL, 1.0f, player, world);
     }
 

@@ -12,6 +12,8 @@ public interface RemoteUser {
 
     void setSession(UUID uuid);
 
+    UUID getUsingSession();
+
     UUID getSession();
 
     default boolean hasSession() {
