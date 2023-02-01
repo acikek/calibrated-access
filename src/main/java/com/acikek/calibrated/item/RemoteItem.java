@@ -133,7 +133,6 @@ public class RemoteItem extends Item implements FabricItem {
         return UseResult.DESYNC;
     }
 
-    // TODO handle different using session/current session
     public void activate(NbtCompound nbt, ServerPlayerEntity player, World world, NamedScreenHandlerFactory screen, BlockPos pos) {
         RemoteUser remoteUser = ((RemoteUser) player);
         boolean isDifferentRemote = remoteUser.isUsingRemote() && !remoteUser.getUsingSession().equals(nbt.getUuid("Session"));
@@ -219,6 +218,7 @@ public class RemoteItem extends Item implements FabricItem {
         return (int) (((double) nbt.getInt("Accesses") / accesses) * 13.0);
     }
 
+    // TODO: pulse with sin when being used
     @Override
     public int getItemBarColor(ItemStack stack) {
         return 6743789;
