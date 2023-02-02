@@ -1,6 +1,8 @@
 package com.acikek.calibrated.item;
 
 import com.acikek.calibrated.CalibratedAccess;
+import com.acikek.calibrated.item.remote.RemoteItem;
+import com.acikek.calibrated.item.remote.RemoteType;
 import net.fabricmc.fabric.api.item.v1.FabricItemSettings;
 import net.minecraft.item.Item;
 import net.minecraft.util.Rarity;
@@ -9,10 +11,10 @@ import net.minecraft.util.registry.Registry;
 public class ModItems {
 
     public static final Item CALIBRATOR = new Item(settings());
-    public static final RemoteItem NOVICE_ACCESSOR = new RemoteItem(settings(), 3, false, false);
-    public static final RemoteItem SKILLED_ACCESSOR = new RemoteItem(settings().rarity(Rarity.UNCOMMON), 7, true, false);
-    public static final RemoteItem EXPERT_ACCESSOR = new RemoteItem(settings().rarity(Rarity.UNCOMMON), 15, true, false);
-    public static final RemoteItem UNLIMITED_ACCESSOR = new RemoteItem(settings().rarity(Rarity.RARE), 0, true, true);
+    public static final RemoteItem NOVICE_ACCESSOR = new RemoteItem(settings(), RemoteType.NOVICE);
+    public static final RemoteItem SKILLED_ACCESSOR = new RemoteItem(settings().rarity(Rarity.UNCOMMON), RemoteType.SKILLED);
+    public static final RemoteItem EXPERT_ACCESSOR = new RemoteItem(settings().rarity(Rarity.UNCOMMON), RemoteType.EXPERT);
+    public static final RemoteItem UNLIMITED_ACCESSOR = new RemoteItem(settings().rarity(Rarity.RARE), RemoteType.UNLIMITED);
 
     public static Item.Settings settings() {
         return new FabricItemSettings().group(CalibratedAccess.ITEM_GROUP);

@@ -1,4 +1,4 @@
-package com.acikek.calibrated.item;
+package com.acikek.calibrated.item.remote;
 
 import com.acikek.calibrated.network.CalibratedAccessNetworking;
 import com.acikek.calibrated.sound.ModSoundEvents;
@@ -48,15 +48,11 @@ public class RemoteItem extends Item implements FabricItem {
     public static final int ACCESS_TICKS = 15 * 20;
     public static final int STATUS_TICKS = 3 * 20;
 
-    public int accesses;
-    public boolean interdimensional;
-    public boolean unlimited;
+    public RemoteType remoteType;
 
-    public RemoteItem(Settings settings, int accesses, boolean interdimensional, boolean unlimited) {
+    public RemoteItem(Settings settings, RemoteType remoteType) {
         super(settings);
-        this.accesses = accesses;
-        this.interdimensional = interdimensional;
-        this.unlimited = unlimited;
+        this.remoteType = remoteType;
     }
 
     @Override
@@ -77,8 +73,8 @@ public class RemoteItem extends Item implements FabricItem {
         UUID session = UUID.randomUUID();
         nbt.putUuid("Session", session);
         ((RemoteUser) player).setSession(session);
-        if (!unlimited) {
-            nbt.putInt("Accesses", accesses);
+        if (!remoteType.unlimited()) {
+            nbt.putInt("Accesses", remoteType.accesses());
         }
         playSound(ModSoundEvents.REMOTE_SYNC, 0.85f + world.random.nextFloat() * 0.3f, player, world);
     }
@@ -100,7 +96,7 @@ public class RemoteItem extends Item implements FabricItem {
     }
 
     public boolean canTryAccess(NbtCompound nbt) {
-        return nbt.contains("SyncedPos") && (unlimited || nbt.getInt("Accesses") >= 1);
+        return nbt.contains("SyncedPos") && (remoteType.unlimited() || nbt.getInt("Accesses") >= 1);
     }
 
     public UseResult use(World world, PlayerEntity player, NbtCompound nbt) {
@@ -114,7 +110,7 @@ public class RemoteItem extends Item implements FabricItem {
         }
         // Prevents interdimensional accesses for remotes that do not have this ability
         Identifier worldId = new Identifier(nbt.getString("SyncedWorld"));
-        if (!world.getRegistryKey().getValue().equals(worldId) && !interdimensional) {
+        if (!world.getRegistryKey().getValue().equals(worldId) && !remoteType.interdimensional()) {
             return UseResult.INVALID_WORLD;
         }
         // Prevents accesses from invalid worlds
@@ -144,12 +140,12 @@ public class RemoteItem extends Item implements FabricItem {
         AccessTicker accessPlayer = ((AccessTicker) player);
         // Players can remove an activated remote from their inventory, and this will stop inventoryTick calls,
         // but that's purely visual and the valuable ticking happens in the server player mixin.
-        if (unlimited || !accessPlayer.isAccessing() || isDifferentRemote) {
-            if (!unlimited) {
+        if (remoteType.unlimited() || !accessPlayer.isAccessing() || isDifferentRemote) {
+            if (!remoteType.unlimited()) {
                 nbt.putInt("Accesses", nbt.getInt("Accesses") - 1);
                 accessPlayer.setAccessTicks(ACCESS_TICKS);
             }
-            nbt.putInt("VisualTicks", unlimited ? STATUS_TICKS : ACCESS_TICKS);
+            nbt.putInt("VisualTicks", remoteType.unlimited() ? STATUS_TICKS : ACCESS_TICKS);
             nbt.putInt("CustomModelData", 1);
         }
         playSound(ModSoundEvents.REMOTE_OPEN, 1.0f, player, world);
@@ -203,7 +199,7 @@ public class RemoteItem extends Item implements FabricItem {
 
     @Override
     public boolean isItemBarVisible(ItemStack stack) {
-        return !unlimited && stack.hasNbt() && canTryAccess(stack.getOrCreateNbt());
+        return !remoteType.unlimited() && stack.hasNbt() && canTryAccess(stack.getOrCreateNbt());
     }
 
     @Override
@@ -215,7 +211,7 @@ public class RemoteItem extends Item implements FabricItem {
         if (!nbt.contains("Accesses")) {
             return 0;
         }
-        return (int) (((double) nbt.getInt("Accesses") / accesses) * 13.0);
+        return (int) (((double) nbt.getInt("Accesses") / remoteType.accesses()) * 13.0);
     }
 
     // TODO: pulse with sin when being used

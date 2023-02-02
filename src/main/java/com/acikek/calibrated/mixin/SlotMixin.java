@@ -1,6 +1,6 @@
 package com.acikek.calibrated.mixin;
 
-import com.acikek.calibrated.item.RemoteItem;
+import com.acikek.calibrated.item.remote.RemoteItem;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
