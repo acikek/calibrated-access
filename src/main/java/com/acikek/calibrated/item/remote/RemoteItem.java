@@ -55,10 +55,18 @@ public class RemoteItem extends Item implements FabricItem {
         this.remoteType = remoteType;
     }
 
+    public static NamedScreenHandlerFactory getScreen(World world, BlockPos pos) {
+        if (world.getBlockEntity(pos) instanceof NamedScreenHandlerFactory screen) {
+            return screen;
+        }
+        return world.getBlockState(pos).createScreenHandlerFactory(world, pos);
+    }
+
     @Override
     public ActionResult useOnBlock(ItemUsageContext context) {
         BlockPos pos = context.getBlockPos();
-        if (context.getWorld().getBlockEntity(pos) instanceof NamedScreenHandlerFactory) {
+        NamedScreenHandlerFactory screen = getScreen(context.getWorld(), pos);
+        if (screen != null) {
             NbtCompound nbt = context.getStack().getOrCreateNbt();
             calibrate(nbt, context.getPlayer(), context.getWorld(), pos, context.getWorld().getBlockState(pos));
             return ActionResult.SUCCESS;
@@ -122,7 +130,8 @@ public class RemoteItem extends Item implements FabricItem {
         // Prevents accesses to non-screen blocks (if they have been broken)
         // This is considered irreversible and will desync the remote
         BlockPos pos = BlockPos.fromLong(nbt.getLong("SyncedPos"));
-        if (targetWorld.getBlockEntity(pos) instanceof NamedScreenHandlerFactory screen) {
+        NamedScreenHandlerFactory screen = getScreen(targetWorld, pos);
+        if (screen != null) {
             activate(nbt, serverPlayer, world, screen, pos);
             return UseResult.SUCCESS;
         }
