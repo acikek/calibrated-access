@@ -1,8 +1,11 @@
 package com.acikek.calibrated.item.remote;
 
+import com.acikek.calibrated.CalibratedAccess;
 import com.acikek.calibrated.sound.CASoundEvents;
 import com.acikek.calibrated.util.AccessTicker;
 import com.acikek.calibrated.util.RemoteUser;
+import com.acikek.datacriteria.api.DataCriteriaAPI;
+import com.acikek.datacriteria.api.Parameters;
 import net.fabricmc.fabric.api.item.v1.FabricItem;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
@@ -59,6 +62,10 @@ public class RemoteItem extends Item implements FabricItem {
             return screen;
         }
         return world.getBlockState(pos).createScreenHandlerFactory(world, pos);
+    }
+
+    public static void triggerRemoteUsed(ServerPlayerEntity player, ServerWorld world, BlockPos targetPos, boolean interdimensional) {
+        DataCriteriaAPI.trigger(CalibratedAccess.id("remote_used"), player, Parameters.block(world, targetPos), interdimensional);
     }
 
     @Override
@@ -123,10 +130,12 @@ public class RemoteItem extends Item implements FabricItem {
         }
         // Prevents interdimensional accesses for remotes that do not have this ability
         Identifier worldId = new Identifier(nbt.getString("SyncedWorld"));
-        if (!world.getRegistryKey().getValue().equals(worldId) && !remoteType.interdimensional()) {
+        boolean interdimensional = !world.getRegistryKey().getValue().equals(worldId);
+        if (interdimensional && !remoteType.interdimensional()) {
             return UseResult.INVALID_WORLD;
         }
         // Prevents accesses from invalid worlds
+        // TODO separate logic if not interdimensional
         ServerWorld targetWorld = ((ServerWorld) world).getServer().getWorld(RegistryKey.of(Registry.WORLD_KEY, worldId));
         if (targetWorld == null) {
             return UseResult.INVALID_WORLD;
@@ -137,13 +146,13 @@ public class RemoteItem extends Item implements FabricItem {
         BlockPos pos = BlockPos.fromLong(nbt.getLong("SyncedPos"));
         NamedScreenHandlerFactory screen = getScreen(targetWorld, pos);
         if (screen != null) {
-            activate(nbt, isDifferentRemote, serverPlayer, world, screen, pos);
+            activate(nbt, isDifferentRemote, serverPlayer, world, targetWorld, interdimensional, screen, pos);
             return UseResult.SUCCESS;
         }
         return UseResult.DESYNC;
     }
 
-    public void activate(NbtCompound nbt, boolean isDifferentRemote, ServerPlayerEntity player, World world, NamedScreenHandlerFactory screen, BlockPos pos) {
+    public void activate(NbtCompound nbt, boolean isDifferentRemote, ServerPlayerEntity player, World world, ServerWorld targetWorld, boolean interdimensional, NamedScreenHandlerFactory screen, BlockPos pos) {
         RemoteUser remoteUser = ((RemoteUser) player);
         if (!remoteUser.isUsingRemote() || isDifferentRemote) {
             RemoteUser.setUsingRemote(player, pos, remoteUser.getSession());
@@ -161,6 +170,7 @@ public class RemoteItem extends Item implements FabricItem {
             nbt.putInt("CustomModelData", 1);
         }
         playSound(CASoundEvents.REMOTE_OPEN, 1.0f, player, world);
+        triggerRemoteUsed(player, targetWorld, pos, interdimensional);
     }
 
     public void fail(NbtCompound nbt, boolean desync, boolean isDifferentRemote, PlayerEntity player, World world) {
