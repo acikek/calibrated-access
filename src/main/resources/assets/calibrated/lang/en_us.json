@@ -1,0 +1,15 @@
+{
+  "itemGroup.calibrated.main": "Calibrated Access",
+  "item.calibrated.calibrator": "Calibrator",
+  "item.calibrated.novice_accessor": "Novice Accessor",
+  "item.calibrated.skilled_accessor": "Skilled Accessor",
+  "item.calibrated.expert_accessor": "Expert Accessor",
+  "item.calibrated.unlimited_accessor": "Unlimited Accessor",
+  "error.calibrated.cannot_access": "Not yet synchronized!",
+  "error.calibrated.invalid_session": "Session mismatch!",
+  "error.calibrated.invalid_world": "Unable to access from this world!",
+  "error.calibrated.desync": "Target block missing!",
+  "subtitles.calibrated.remote_accessor.sync": "Accessor synchronizes",
+  "subtitles.calibrated.remote_accessor.open": "Accessor used",
+  "subtitles.calibrated.remote_accessor.fail": "Accessor fails"
+}

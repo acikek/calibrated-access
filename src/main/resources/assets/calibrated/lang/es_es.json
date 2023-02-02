@@ -1,0 +1,14 @@
+{
+  "item.calibrated.calibrator": "Calibrador",
+  "item.calibrated.novice_accessor": "Enlazador novato",
+  "item.calibrated.skilled_accessor": "Enlazador hábil",
+  "item.calibrated.expert_accessor": "Enlazador experto",
+  "item.calibrated.unlimited_accessor": "Enlazador ilimitado",
+  "error.calibrated.cannot_access": "¡Todavía no sincronizado!",
+  "error.calibrated.invalid_session": "¡Las sesiones no corresponden!",
+  "error.calibrated.invalid_world": "¡No accesible de este mundo!",
+  "error.calibrated.desync": "¡Falta el bloque objetivo!",
+  "subtitles.calibrated.remote_accessor.sync": "Enlazador sincroniza",
+  "subtitles.calibrated.remote_accessor.open": "Enlazador usado",
+  "subtitles.calibrated.remote_accessor.fail": "Enlazador falla"
+}

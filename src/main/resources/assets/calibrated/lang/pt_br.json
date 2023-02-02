@@ -1,0 +1,14 @@
+{
+  "item.calibrated.calibrator": "Calibrador",
+  "item.calibrated.novice_accessor": "Acessador Novato",
+  "item.calibrated.skilled_accessor": "Acessador Adepto",
+  "item.calibrated.expert_accessor": "Acessador Especialista",
+  "item.calibrated.unlimited_accessor": "Acessador Ilimitado",
+  "error.calibrated.cannot_access": "Ainda não sincronizado!",
+  "error.calibrated.invalid_session": "As sessões não correspondem!",
+  "error.calibrated.invalid_world": "Não accessível desse mundo!",
+  "error.calibrated.desync": "Bloco alvo está faltando!",
+  "subtitles.calibrated.remote_accessor.sync": "Acessador sincroniza",
+  "subtitles.calibrated.remote_accessor.open": "Acessador usado",
+  "subtitles.calibrated.remote_accessor.fail": "Acessador falha"
+}
