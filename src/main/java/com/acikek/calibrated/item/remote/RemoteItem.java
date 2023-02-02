@@ -115,16 +115,16 @@ public class RemoteItem extends Item implements FabricItem {
         return remoteUser.isUsingRemote() && !remoteUser.getUsingSession().equals(nbt.getUuid("Session"));
     }
 
-    public boolean canTryAccess(NbtCompound nbt) {
-        return nbt.contains("SyncedPos") && (remoteType.unlimited() || nbt.getInt("Accesses") >= 1);
+    public boolean canTryAccess(NbtCompound nbt, RemoteUser remoteUser) {
+        return nbt.contains("SyncedPos") && (remoteType.unlimited() || nbt.getInt("Accesses") >= 1 || (remoteUser != null && remoteUser.isUsingRemote()));
     }
 
     public UseResult use(NbtCompound nbt, boolean isDifferentRemote, World world, PlayerEntity player) {
-        if (!canTryAccess(nbt)) {
+        RemoteUser remoteUser = (RemoteUser) player;
+        if (!canTryAccess(nbt, remoteUser)) {
             return UseResult.CANNOT_ACCESS;
         }
         // Prevents a player from using more than one remote at once
-        RemoteUser remoteUser = (RemoteUser) player;
         if (!remoteUser.hasSession() || !remoteUser.getSession().equals(nbt.getUuid("Session"))) {
             return UseResult.INVALID_SESSION;
         }
@@ -226,7 +226,7 @@ public class RemoteItem extends Item implements FabricItem {
 
     @Override
     public boolean isItemBarVisible(ItemStack stack) {
-        return !remoteType.unlimited() && stack.hasNbt() && canTryAccess(stack.getOrCreateNbt());
+        return !remoteType.unlimited() && stack.hasNbt() && canTryAccess(stack.getOrCreateNbt(), null);
     }
 
     @Override
