@@ -1,6 +1,5 @@
 package com.acikek.calibrated.item.remote;
 
-import com.acikek.calibrated.network.CalibratedAccessNetworking;
 import com.acikek.calibrated.sound.ModSoundEvents;
 import com.acikek.calibrated.util.AccessTicker;
 import com.acikek.calibrated.util.RemoteUser;
@@ -93,9 +92,10 @@ public class RemoteItem extends Item implements FabricItem {
         // Run on server to validate world and guarantee proper block entity fetching.
         if (!world.isClient()) {
             NbtCompound nbt = stack.getOrCreateNbt();
-            UseResult result = use(world, user, nbt);
+            boolean isDifferentRemote = isDifferentRemote(nbt, user);
+            UseResult result = use(nbt, isDifferentRemote, world, user);
             if (result != UseResult.SUCCESS) {
-                fail(nbt, result == UseResult.DESYNC, user, world);
+                fail(nbt, result == UseResult.DESYNC, isDifferentRemote, user, world);
                 user.sendMessage(result.message, true);
             }
             return TypedActionResult.pass(stack);
@@ -103,11 +103,16 @@ public class RemoteItem extends Item implements FabricItem {
         return super.use(world, user, hand);
     }
 
+    public static boolean isDifferentRemote(NbtCompound nbt, PlayerEntity player) {
+        RemoteUser remoteUser = (RemoteUser) player;
+        return remoteUser.isUsingRemote() && !remoteUser.getUsingSession().equals(nbt.getUuid("Session"));
+    }
+
     public boolean canTryAccess(NbtCompound nbt) {
         return nbt.contains("SyncedPos") && (remoteType.unlimited() || nbt.getInt("Accesses") >= 1);
     }
 
-    public UseResult use(World world, PlayerEntity player, NbtCompound nbt) {
+    public UseResult use(NbtCompound nbt, boolean isDifferentRemote, World world, PlayerEntity player) {
         if (!canTryAccess(nbt)) {
             return UseResult.CANNOT_ACCESS;
         }
@@ -132,18 +137,16 @@ public class RemoteItem extends Item implements FabricItem {
         BlockPos pos = BlockPos.fromLong(nbt.getLong("SyncedPos"));
         NamedScreenHandlerFactory screen = getScreen(targetWorld, pos);
         if (screen != null) {
-            activate(nbt, serverPlayer, world, screen, pos);
+            activate(nbt, isDifferentRemote, serverPlayer, world, screen, pos);
             return UseResult.SUCCESS;
         }
         return UseResult.DESYNC;
     }
 
-    public void activate(NbtCompound nbt, ServerPlayerEntity player, World world, NamedScreenHandlerFactory screen, BlockPos pos) {
+    public void activate(NbtCompound nbt, boolean isDifferentRemote, ServerPlayerEntity player, World world, NamedScreenHandlerFactory screen, BlockPos pos) {
         RemoteUser remoteUser = ((RemoteUser) player);
-        boolean isDifferentRemote = remoteUser.isUsingRemote() && !remoteUser.getUsingSession().equals(nbt.getUuid("Session"));
         if (!remoteUser.isUsingRemote() || isDifferentRemote) {
-            remoteUser.setUsingRemote(pos, remoteUser.getSession());
-            CalibratedAccessNetworking.s2cSetUsingRemote(player, pos, remoteUser.getSession());
+            RemoteUser.setUsingRemote(player, pos, remoteUser.getSession());
         }
         player.openHandledScreen(screen);
         AccessTicker accessPlayer = ((AccessTicker) player);
@@ -160,7 +163,7 @@ public class RemoteItem extends Item implements FabricItem {
         playSound(ModSoundEvents.REMOTE_OPEN, 1.0f, player, world);
     }
 
-    public void fail(NbtCompound nbt, boolean desync, PlayerEntity player, World world) {
+    public void fail(NbtCompound nbt, boolean desync, boolean isDifferentRemote, PlayerEntity player, World world) {
         if (desync) {
             nbt.remove("SyncedPos");
             nbt.remove("SyncedWorld");
@@ -170,6 +173,9 @@ public class RemoteItem extends Item implements FabricItem {
         }
         nbt.putInt("VisualTicks", STATUS_TICKS);
         nbt.putInt("CustomModelData", 2);
+        if (!isDifferentRemote && player instanceof ServerPlayerEntity serverPlayer) {
+            RemoteUser.setUsingRemote(serverPlayer, null, null);
+        }
         player.getItemCooldownManager().set(this, 40);
         playSound(ModSoundEvents.REMOTE_FAIL, 1.0f, player, world);
     }
