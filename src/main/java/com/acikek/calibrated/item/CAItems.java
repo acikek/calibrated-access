@@ -22,7 +22,9 @@ public class CAItems {
     public static final RemoteItem UNLIMITED_ACCESSOR = new RemoteItem(settings().rarity(Rarity.RARE), RemoteType.UNLIMITED);
 
     public static Item.Settings settings() {
-        return new FabricItemSettings().group(CalibratedAccess.ITEM_GROUP);
+        return new FabricItemSettings()
+                .group(CalibratedAccess.ITEM_GROUP)
+                .maxCount(1);
     }
 
     public static void register(String name, Item item) {
