@@ -1,6 +1,5 @@
 package com.acikek.calibrated.mixin;
 
-import com.acikek.calibrated.network.CalibratedAccessNetworking;
 import com.acikek.calibrated.util.AccessTicker;
 import com.acikek.calibrated.util.RemoteUser;
 import net.minecraft.nbt.NbtCompound;

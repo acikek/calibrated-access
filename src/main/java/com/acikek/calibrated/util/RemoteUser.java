@@ -1,6 +1,6 @@
 package com.acikek.calibrated.util;
 
-import com.acikek.calibrated.network.CalibratedAccessNetworking;
+import com.acikek.calibrated.network.CANetworking;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.math.BlockPos;
 
@@ -24,6 +24,6 @@ public interface RemoteUser {
 
     static void setUsingRemote(ServerPlayerEntity player, BlockPos syncedPos, UUID session) {
         ((RemoteUser) player).setUsingRemote(syncedPos, session);
-        CalibratedAccessNetworking.s2cSetUsingRemote(player, syncedPos, session);
+        CANetworking.s2cSetUsingRemote(player, syncedPos, session);
     }
 }

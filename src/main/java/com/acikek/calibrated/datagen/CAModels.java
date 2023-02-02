@@ -1,7 +1,7 @@
 package com.acikek.calibrated.datagen;
 
 import com.acikek.calibrated.CalibratedAccess;
-import com.acikek.calibrated.item.ModItems;
+import com.acikek.calibrated.item.CAItems;
 import com.acikek.calibrated.item.remote.RemoteItem;
 import net.fabricmc.fabric.api.datagen.v1.FabricDataGenerator;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricModelProvider;
@@ -11,7 +11,7 @@ import net.minecraft.util.Identifier;
 
 import java.util.Optional;
 
-public class CalibratedAccessModels extends FabricModelProvider {
+public class CAModels extends FabricModelProvider {
 
     public static final TextureKey LAYER1 = TextureKey.of("layer1");
 
@@ -24,7 +24,7 @@ public class CalibratedAccessModels extends FabricModelProvider {
     public static final EffectModel ACTIVATED = getAccessorEffectModel("zap");
     public static final EffectModel FAIL = getAccessorEffectModel("fail");
 
-    public CalibratedAccessModels(FabricDataGenerator dataGenerator) {
+    public CAModels(FabricDataGenerator dataGenerator) {
         super(dataGenerator);
     }
 
@@ -47,8 +47,8 @@ public class CalibratedAccessModels extends FabricModelProvider {
 
     @Override
     public void generateItemModels(ItemModelGenerator itemModelGenerator) {
-        itemModelGenerator.register(ModItems.CALIBRATOR, Models.GENERATED);
-        for (RemoteItem item : ModItems.remotes) {
+        itemModelGenerator.register(CAItems.CALIBRATOR, Models.GENERATED);
+        for (RemoteItem item : CAItems.remotes) {
             generateRemoteModels(item, itemModelGenerator);
         }
     }

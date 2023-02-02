@@ -1,7 +1,7 @@
 package com.acikek.calibrated.datagen;
 
 import com.acikek.calibrated.CalibratedAccess;
-import com.acikek.calibrated.item.ModItems;
+import com.acikek.calibrated.item.CAItems;
 import com.acikek.calibrated.item.remote.RemoteItem;
 import com.acikek.calibrated.item.remote.RemoteType;
 import net.fabricmc.fabric.api.datagen.v1.FabricDataGenerator;
@@ -16,9 +16,9 @@ import net.minecraft.recipe.Ingredient;
 
 import java.util.function.Consumer;
 
-public class CalibratedAccessRecipes extends FabricRecipeProvider {
+public class CARecipes extends FabricRecipeProvider {
 
-    public CalibratedAccessRecipes(FabricDataGenerator dataGenerator) {
+    public CARecipes(FabricDataGenerator dataGenerator) {
         super(dataGenerator);
     }
 
@@ -39,8 +39,8 @@ public class CalibratedAccessRecipes extends FabricRecipeProvider {
                 .pattern("CCC")
                 .input('A', type.antennaMaterial())
                 .input('C', type.casingMaterial())
-                .input('X', ModItems.CALIBRATOR)
-                .criterion("has_calibrator", RecipeProvider.conditionsFromItem(ModItems.CALIBRATOR))
+                .input('X', CAItems.CALIBRATOR)
+                .criterion("has_calibrator", RecipeProvider.conditionsFromItem(CAItems.CALIBRATOR))
                 .offerTo(exporter);
     }
 
@@ -54,8 +54,8 @@ public class CalibratedAccessRecipes extends FabricRecipeProvider {
 
     @Override
     protected void generateRecipes(Consumer<RecipeJsonProvider> exporter) {
-        generateSmithing("calibrator", Items.ENDER_PEARL, Items.REDSTONE, ModItems.CALIBRATOR, exporter);
-        for (RemoteItem item : ModItems.remotes) {
+        generateSmithing("calibrator", Items.ENDER_PEARL, Items.REDSTONE, CAItems.CALIBRATOR, exporter);
+        for (RemoteItem item : CAItems.remotes) {
             generate(item, exporter);
         }
     }

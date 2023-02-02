@@ -11,7 +11,7 @@ import net.minecraft.util.registry.Registry;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ModItems {
+public class CAItems {
 
     public static List<RemoteItem> remotes = new ArrayList<>();
 

@@ -14,7 +14,7 @@ import net.minecraft.util.math.BlockPos;
 
 import java.util.UUID;
 
-public class CalibratedAccessNetworking {
+public class CANetworking {
 
     public static final Identifier SET_USING_REMOTE = CalibratedAccess.id("set_using_remote");
 

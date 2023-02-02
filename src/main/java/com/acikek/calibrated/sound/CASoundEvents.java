@@ -7,7 +7,7 @@ import net.minecraft.util.registry.Registry;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ModSoundEvents {
+public class CASoundEvents {
 
     public static List<SoundEvent> sounds = new ArrayList<>();
 

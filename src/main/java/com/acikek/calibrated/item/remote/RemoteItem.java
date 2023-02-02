@@ -1,6 +1,6 @@
 package com.acikek.calibrated.item.remote;
 
-import com.acikek.calibrated.sound.ModSoundEvents;
+import com.acikek.calibrated.sound.CASoundEvents;
 import com.acikek.calibrated.util.AccessTicker;
 import com.acikek.calibrated.util.RemoteUser;
 import net.fabricmc.fabric.api.item.v1.FabricItem;
@@ -83,7 +83,7 @@ public class RemoteItem extends Item implements FabricItem {
         if (!remoteType.unlimited()) {
             nbt.putInt("Accesses", remoteType.accesses());
         }
-        playSound(ModSoundEvents.REMOTE_SYNC, 0.85f + world.random.nextFloat() * 0.3f, player, world);
+        playSound(CASoundEvents.REMOTE_SYNC, 0.85f + world.random.nextFloat() * 0.3f, player, world);
     }
 
     @Override
@@ -160,7 +160,7 @@ public class RemoteItem extends Item implements FabricItem {
             nbt.putInt("VisualTicks", remoteType.unlimited() ? STATUS_TICKS : ACCESS_TICKS);
             nbt.putInt("CustomModelData", 1);
         }
-        playSound(ModSoundEvents.REMOTE_OPEN, 1.0f, player, world);
+        playSound(CASoundEvents.REMOTE_OPEN, 1.0f, player, world);
     }
 
     public void fail(NbtCompound nbt, boolean desync, boolean isDifferentRemote, PlayerEntity player, World world) {
@@ -177,7 +177,7 @@ public class RemoteItem extends Item implements FabricItem {
             RemoteUser.setUsingRemote(serverPlayer, null, null);
         }
         player.getItemCooldownManager().set(this, 40);
-        playSound(ModSoundEvents.REMOTE_FAIL, 1.0f, player, world);
+        playSound(CASoundEvents.REMOTE_FAIL, 1.0f, player, world);
     }
 
     public static void playSound(SoundEvent event, float pitch, PlayerEntity player, World world) {

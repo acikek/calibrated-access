@@ -1,7 +1,7 @@
 package com.acikek.calibrated;
 
-import com.acikek.calibrated.item.ModItems;
-import com.acikek.calibrated.sound.ModSoundEvents;
+import com.acikek.calibrated.item.CAItems;
+import com.acikek.calibrated.sound.CASoundEvents;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.itemgroup.FabricItemGroupBuilder;
 import net.minecraft.item.ItemGroup;
@@ -17,12 +17,12 @@ public class CalibratedAccess implements ModInitializer {
     }
 
     public static final ItemGroup ITEM_GROUP = FabricItemGroupBuilder.create(id("main"))
-            .icon(() -> new ItemStack(ModItems.NOVICE_ACCESSOR))
+            .icon(() -> new ItemStack(CAItems.NOVICE_ACCESSOR))
             .build();
 
     @Override
     public void onInitialize() {
-        ModItems.register();
-        ModSoundEvents.register();
+        CAItems.register();
+        CASoundEvents.register();
     }
 }

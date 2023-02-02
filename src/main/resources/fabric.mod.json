@@ -22,7 +22,7 @@
       "com.acikek.calibrated.client.CalibratedAccessClient"
     ],
     "fabric-datagen": [
-      "com.acikek.calibrated.datagen.CalibratedAccessDatagen"
+      "com.acikek.calibrated.datagen.CADatagen"
     ]
   },
   "mixins": [
