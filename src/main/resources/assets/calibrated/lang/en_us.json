@@ -11,5 +11,6 @@
   "error.calibrated.desync": "Target block missing!",
   "subtitles.calibrated.remote_accessor.sync": "Accessor synchronizes",
   "subtitles.calibrated.remote_accessor.open": "Accessor used",
-  "subtitles.calibrated.remote_accessor.fail": "Accessor fails"
+  "subtitles.calibrated.remote_accessor.fail": "Accessor fails",
+  "tag.calibrated.remotes": "Remote Accessors"
 }
