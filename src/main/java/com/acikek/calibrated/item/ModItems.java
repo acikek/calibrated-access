@@ -8,7 +8,12 @@ import net.minecraft.item.Item;
 import net.minecraft.util.Rarity;
 import net.minecraft.util.registry.Registry;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class ModItems {
+
+    public static List<RemoteItem> remotes = new ArrayList<>();
 
     public static final Item CALIBRATOR = new Item(settings());
     public static final RemoteItem NOVICE_ACCESSOR = new RemoteItem(settings(), RemoteType.NOVICE);
@@ -22,6 +27,9 @@ public class ModItems {
 
     public static void register(String name, Item item) {
         Registry.register(Registry.ITEM, CalibratedAccess.id(name), item);
+        if (item instanceof RemoteItem remoteItem) {
+            remotes.add(remoteItem);
+        }
     }
 
     public static void register() {

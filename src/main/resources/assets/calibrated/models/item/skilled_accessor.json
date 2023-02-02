@@ -8,7 +8,7 @@
       "predicate": {
         "custom_model_data": 1
       },
-      "model": "calibrated:item/skilled_accessor_activated"
+      "model": "calibrated:item/skilled_accessor_zap"
     },
     {
       "predicate": {

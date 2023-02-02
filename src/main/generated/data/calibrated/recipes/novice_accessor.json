@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "A": {
+      "item": "minecraft:copper_ingot"
+    },
+    "C": {
+      "item": "minecraft:iron_ingot"
+    },
+    "X": {
+      "item": "calibrated:calibrator"
+    }
+  },
+  "pattern": [
+    " A ",
+    "CXC",
+    "CCC"
+  ],
+  "result": {
+    "item": "calibrated:novice_accessor"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "A": {
+      "item": "minecraft:quartz"
+    },
+    "C": {
+      "item": "minecraft:gold_ingot"
+    },
+    "X": {
+      "item": "calibrated:calibrator"
+    }
+  },
+  "pattern": [
+    " A ",
+    "CXC",
+    "CCC"
+  ],
+  "result": {
+    "item": "calibrated:skilled_accessor"
+  }
+}

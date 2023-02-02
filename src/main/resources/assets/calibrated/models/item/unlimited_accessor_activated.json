@@ -1,7 +1,0 @@
-{
-  "parent": "item/generated",
-  "textures": {
-    "layer0": "calibrated:item/unlimited_accessor",
-    "layer1": "calibrated:item/zap"
-  }
-}

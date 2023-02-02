@@ -20,6 +20,9 @@
     ],
     "client": [
       "com.acikek.calibrated.client.CalibratedAccessClient"
+    ],
+    "fabric-datagen": [
+      "com.acikek.calibrated.datagen.CalibratedAccessDatagen"
     ]
   },
   "mixins": [
