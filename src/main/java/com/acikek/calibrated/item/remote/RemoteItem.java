@@ -135,8 +135,10 @@ public class RemoteItem extends Item implements FabricItem {
             return UseResult.INVALID_WORLD;
         }
         // Prevents accesses from invalid worlds
-        // TODO separate logic if not interdimensional
-        ServerWorld targetWorld = ((ServerWorld) world).getServer().getWorld(RegistryKey.of(Registry.WORLD_KEY, worldId));
+        ServerWorld serverWorld = (ServerWorld) world;
+        ServerWorld targetWorld = remoteType.interdimensional()
+                ? serverWorld
+                : serverWorld.getServer().getWorld(RegistryKey.of(Registry.WORLD_KEY, worldId));
         if (targetWorld == null) {
             return UseResult.INVALID_WORLD;
         }
