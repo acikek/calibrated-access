@@ -111,7 +111,7 @@ public class RemoteItem extends Item implements FabricItem {
             boolean isDifferentRemote = isDifferentRemote(nbt, user);
             UseResult result = use(nbt, isDifferentRemote, world, user);
             if (result != UseResult.SUCCESS) {
-                fail(nbt, result == UseResult.DESYNC, isDifferentRemote, user, world);
+                fail(nbt, result == UseResult.DESYNC, result != UseResult.INVALID_WORLD, isDifferentRemote, user, world);
                 user.sendMessage(result.message, true);
             }
             return TypedActionResult.pass(stack);
@@ -184,16 +184,18 @@ public class RemoteItem extends Item implements FabricItem {
         triggerRemoteUsed(player, targetWorld, pos, interdimensional);
     }
 
-    public void fail(NbtCompound nbt, boolean desync, boolean isDifferentRemote, PlayerEntity player, World world) {
+    public void fail(NbtCompound nbt, boolean desync, boolean eraseInfo, boolean isDifferentRemote, PlayerEntity player, World world) {
         if (desync) {
             nbt.remove("Session");
             ((RemoteUser) player).setSession(null);
         }
-        // This remote needs to be recalibrated anyways
-        nbt.remove("SyncedPos");
-        nbt.remove("SyncedWorld");
-        nbt.remove("SyncedNameKey");
-        nbt.remove("Accesses");
+        // If the remote needs to be recalibrated anyways
+        if (eraseInfo) {
+            nbt.remove("SyncedPos");
+            nbt.remove("SyncedWorld");
+            nbt.remove("SyncedNameKey");
+            nbt.remove("Accesses");
+        }
         nbt.putInt("VisualTicks", STATUS_TICKS);
         nbt.putInt("CustomModelData", 2);
         if (!isDifferentRemote && player instanceof ServerPlayerEntity serverPlayer) {
