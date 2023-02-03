@@ -24,13 +24,12 @@ public class EntityMixin implements RemoteUser {
     private final Map<UUID, SessionData> calibrated$sessions = new LinkedHashMap<>();
 
     @Override
-    public SessionData addSession(UUID session, SessionData data) {
+    public void addSession(UUID session, SessionData data, int maxSessions) {
         calibrated$sessions.put(session, data);
-        if (calibrated$sessions.size() > 3) {
+        if (calibrated$sessions.size() > maxSessions) {
             UUID removingSession = calibrated$sessions.entrySet().iterator().next().getKey();
             calibrated$sessions.remove(removingSession);
         }
-        return data;
     }
 
     @Override

@@ -93,7 +93,7 @@ public class RemoteItem extends Item implements FabricItem {
         }
         UUID session = UUID.randomUUID();
         nbt.putUuid("Session", session);
-        remoteUser.addSession(session, pos);
+        remoteUser.addSession(session, pos, world.getGameRules().getInt(CalibratedAccess.MAX_REMOTE_SESSIONS));
         if (!remoteType.unlimited()) {
             nbt.putInt("Accesses", remoteType.accesses());
         }

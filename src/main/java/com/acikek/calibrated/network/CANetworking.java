@@ -18,17 +18,11 @@ public class CANetworking {
 
     public static final Identifier MODIFY_SESSION = CalibratedAccess.id("modify_session");
 
-    public enum SessionModifier {
-        ADD,
-        SET,
-        REMOVE
-    }
-
-    public static void s2cModifySession(ServerPlayerEntity to, UUID session, SessionData data, SessionModifier modifier) {
+    public static void s2cModifySession(ServerPlayerEntity to, UUID session, SessionData data, boolean remove) {
         PacketByteBuf buf = PacketByteBufs.create();
         buf.writeUuid(session);
-        buf.writeEnumConstant(modifier);
-        if (data != null) {
+        buf.writeBoolean(remove);
+        if (!remove) {
             data.write(buf);
         }
         ServerPlayNetworking.send(to, MODIFY_SESSION, buf);
@@ -39,11 +33,11 @@ public class CANetworking {
         ClientPlayNetworking.registerGlobalReceiver(MODIFY_SESSION, (client, handler, buf, responseSender) -> {
             RemoteUser remoteUser = ((RemoteUser) client.player);
             UUID session = buf.readUuid();
-            SessionModifier modifier = buf.readEnumConstant(SessionModifier.class);
-            switch (modifier) {
-                case ADD -> remoteUser.addSession(session, SessionData.read(buf));
-                case SET -> remoteUser.setSessionData(session, SessionData.read(buf));
-                case REMOVE -> remoteUser.removeSession(session);
+            if (buf.readBoolean()) {
+                remoteUser.removeSession(session);
+            }
+            else {
+                remoteUser.setSessionData(session, SessionData.read(buf));
             }
         });
     }

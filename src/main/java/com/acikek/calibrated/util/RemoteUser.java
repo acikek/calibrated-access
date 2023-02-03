@@ -8,10 +8,10 @@ import java.util.UUID;
 
 public interface RemoteUser {
 
-    SessionData addSession(UUID session, SessionData data);
+    void addSession(UUID session, SessionData data, int maxSessions);
 
-    default SessionData addSession(UUID session, BlockPos syncedPos) {
-        return addSession(session, new SessionData(syncedPos, false, 0));
+    default void addSession(UUID session, BlockPos syncedPos, int maxSessions) {
+        addSession(session, new SessionData(syncedPos, false, 0), maxSessions);
     }
 
     void setSessionData(UUID session, SessionData data);
@@ -30,18 +30,13 @@ public interface RemoteUser {
         return getSession(session).active;
     }
 
-    static void addSession(ServerPlayerEntity player, UUID session, BlockPos syncedPos) {
-        SessionData data = ((RemoteUser) player).addSession(session, syncedPos);
-        CANetworking.s2cModifySession(player, session, data, CANetworking.SessionModifier.ADD);
-    }
-
     static void activateSession(ServerPlayerEntity player, UUID session, int ticks) {
         SessionData data = ((RemoteUser) player).activateSession(session, ticks);
-        CANetworking.s2cModifySession(player, session, data, CANetworking.SessionModifier.SET);
+        CANetworking.s2cModifySession(player, session, data, false);
     }
 
     static void removeSession(ServerPlayerEntity player, UUID session) {
         ((RemoteUser) player).removeSession(session);
-        CANetworking.s2cModifySession(player, session, null, CANetworking.SessionModifier.REMOVE);
+        CANetworking.s2cModifySession(player, session, null, true);
     }
 }
