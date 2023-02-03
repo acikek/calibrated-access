@@ -6,7 +6,6 @@ import net.minecraft.entity.Entity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
-import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -14,7 +13,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.UUID;
 
 @Mixin(Entity.class)
 public class EntityMixin implements RemoteUser {
@@ -57,28 +58,13 @@ public class EntityMixin implements RemoteUser {
 
     @Inject(method = "tick", at = @At("TAIL"))
     private void calibrated$serverTickDownAccess(CallbackInfo ci) {
-        Entity entity = (Entity) (Object) this;
-        if (!(entity instanceof ServerPlayerEntity player)) {
-            return;
-        }
-        // Small optimization to not instantiate a new removal list every tick
-        List<UUID> toRemove = null;
-        for (Map.Entry<UUID, SessionData> ticker : calibrated$sessions.entrySet()) {
-            if (ticker.getValue().ticks <= 0) {
-                return;
+        for (SessionData ticker : calibrated$sessions.values()) {
+            if (!ticker.active) {
+                continue;
             }
-            ticker.getValue().ticks--;
-            if (ticker.getValue().ticks == 0) {
-                RemoteUser.removeSession(player, ticker.getKey());
-                if (toRemove == null) {
-                    toRemove = new ArrayList<>();
-                    toRemove.add(ticker.getKey());
-                }
-            }
-        }
-        if (toRemove != null) {
-            for (UUID session : toRemove) {
-                calibrated$sessions.remove(session);
+            ticker.ticks--;
+            if (ticker.ticks == 0) {
+                ticker.active = false;
             }
         }
     }

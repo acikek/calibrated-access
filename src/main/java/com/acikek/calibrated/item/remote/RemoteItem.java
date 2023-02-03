@@ -86,10 +86,13 @@ public class RemoteItem extends Item implements FabricItem {
         // Remove animations if any are present
         nbt.remove("VisualTicks");
         nbt.remove("CustomModelData");
+        RemoteUser remoteUser = (RemoteUser) player;
+        // If the remote has an old session, attempt to remove that
+        if (nbt.contains("Session")) {
+            remoteUser.removeSession(nbt.getUuid("Session"));
+        }
         UUID session = UUID.randomUUID();
         nbt.putUuid("Session", session);
-        // Called on both server and client, no need for networking call
-        RemoteUser remoteUser = (RemoteUser) player;
         remoteUser.addSession(session, pos);
         if (!remoteType.unlimited()) {
             nbt.putInt("Accesses", remoteType.accesses());
@@ -126,6 +129,7 @@ public class RemoteItem extends Item implements FabricItem {
         if (!remoteUser.hasSession(nbt.getUuid("Session"))) {
             return UseResult.INVALID_SESSION;
         }
+        System.out.println(remoteUser.getSession(nbt.getUuid("Session")).toNbt());
         // Prevents interdimensional accesses for remotes that do not have this ability
         Identifier worldId = new Identifier(nbt.getString("SyncedWorld"));
         boolean interdimensional = !world.getRegistryKey().getValue().equals(worldId);
