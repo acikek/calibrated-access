@@ -8,22 +8,27 @@ import java.util.UUID;
 
 public interface RemoteUser {
 
-    void setUsingRemote(BlockPos syncedPos, UUID session);
+    // player calibrates remote:
+        // adds UUID session to queue
+    // remote is a "different remote" if the session is in the usingRemotes map but not in the sessions queue
 
-    boolean isUsingRemote();
+    void addUsingSession(UUID session, BlockPos syncedPos);
 
-    void setSession(UUID uuid);
+    void removeUsingSession(UUID session);
 
-    UUID getUsingSession();
+    void addSession(UUID uuid);
 
-    UUID getSession();
+    boolean hasUsingSession(UUID session);
 
-    default boolean hasSession() {
-        return getSession() != null;
+    boolean hasCurrentSession(UUID session);
+
+    static void addUsingSession(ServerPlayerEntity player, UUID session, BlockPos syncedPos) {
+        ((RemoteUser) player).addUsingSession(session, syncedPos);
+        CANetworking.s2cModifyUsingSession(player, session, syncedPos);
     }
 
-    static void setUsingRemote(ServerPlayerEntity player, BlockPos syncedPos, UUID session) {
-        ((RemoteUser) player).setUsingRemote(syncedPos, session);
-        CANetworking.s2cSetUsingRemote(player, syncedPos, session);
+    static void removeUsingSession(ServerPlayerEntity player, UUID session) {
+        ((RemoteUser) player).removeUsingSession(session);
+        CANetworking.s2cModifyUsingSession(player, session, null);
     }
 }

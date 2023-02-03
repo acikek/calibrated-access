@@ -16,22 +16,29 @@ import java.util.UUID;
 
 public class CANetworking {
 
-    public static final Identifier SET_USING_REMOTE = CalibratedAccess.id("set_using_remote");
+    public static final Identifier MODIFY_USING_SESSION = CalibratedAccess.id("modify_using_session");
 
-    public static void s2cSetUsingRemote(ServerPlayerEntity to, BlockPos syncedPos, UUID session) {
+    public static void s2cModifyUsingSession(ServerPlayerEntity to, UUID session, BlockPos syncedPos) {
         PacketByteBuf buf = PacketByteBufs.create();
-        buf.writeNullable(syncedPos, PacketByteBuf::writeBlockPos);
-        buf.writeNullable(session, PacketByteBuf::writeUuid);
-        ServerPlayNetworking.send(to, SET_USING_REMOTE, buf);
+        buf.writeUuid(session);
+        buf.writeBoolean(syncedPos != null);
+        if (syncedPos != null) {
+            buf.writeBlockPos(syncedPos);
+        }
+        ServerPlayNetworking.send(to, MODIFY_USING_SESSION, buf);
     }
 
     @Environment(EnvType.CLIENT)
     public static void registerClient() {
-        ClientPlayNetworking.registerGlobalReceiver(SET_USING_REMOTE, (client, handler, buf, responseSender) ->
-            ((RemoteUser) client.player).setUsingRemote(
-                    buf.readNullable(PacketByteBuf::readBlockPos),
-                    buf.readNullable(PacketByteBuf::readUuid)
-            )
-        );
+        ClientPlayNetworking.registerGlobalReceiver(MODIFY_USING_SESSION, (client, handler, buf, responseSender) -> {
+            RemoteUser remoteUser = ((RemoteUser) client.player);
+            UUID session = buf.readUuid();
+            if (buf.readBoolean()) {
+                remoteUser.addUsingSession(session, buf.readBlockPos());
+            }
+            else {
+                remoteUser.removeUsingSession(session);
+            }
+        });
     }
 }
