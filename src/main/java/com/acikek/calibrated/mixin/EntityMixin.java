@@ -1,12 +1,12 @@
 package com.acikek.calibrated.mixin;
 
 import com.acikek.calibrated.util.RemoteUser;
-import com.acikek.calibrated.util.SessionMapHelper;
+import com.acikek.calibrated.util.SessionData;
 import net.minecraft.entity.Entity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtHelper;
 import net.minecraft.nbt.NbtList;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -19,49 +19,81 @@ import java.util.*;
 @Mixin(Entity.class)
 public class EntityMixin implements RemoteUser {
 
-    // The current sessions are set whenever a player calibrates with a remote. A "using" session is set whenever
-    // a player *uses* a remote; this session is ticked down in the server player mixin and removed when the grace
-    // period is over. IF the current sessions are full, a player can use the remote whose session is about to be dequeued,
-    // calibrate with a new remote, and then try to use the new one, in which case these session types would differ.
-
-    private final Map<UUID, BlockPos> calibrated$usingSessions = new HashMap<>();
-
-    private final Queue<UUID> calibrated$currentSessions = new ArrayDeque<>();
+    // TODO maybe possibly needs synchronization (the java feature)
+    private final Map<UUID, SessionData> calibrated$sessions = new LinkedHashMap<>();
 
     @Override
-    public void addUsingSession(UUID session, BlockPos syncedPos) {
-        calibrated$usingSessions.put(session, syncedPos);
-    }
-
-    @Override
-    public void removeUsingSession(UUID session) {
-        calibrated$usingSessions.remove(session);
-    }
-
-    @Override
-    public void addSession(UUID uuid) {
-        calibrated$currentSessions.add(uuid);
-        if (calibrated$currentSessions.size() > 3) {
-            calibrated$currentSessions.remove();
+    public SessionData addSession(UUID session, SessionData data) {
+        calibrated$sessions.put(session, data);
+        if (calibrated$sessions.size() > 3) {
+            UUID removingSession = calibrated$sessions.entrySet().iterator().next().getKey();
+            calibrated$sessions.remove(removingSession);
         }
+        return data;
     }
 
     @Override
-    public boolean hasUsingSession(UUID session) {
-        return calibrated$usingSessions.containsKey(session);
+    public void setSessionData(UUID session, SessionData data) {
+        calibrated$sessions.put(session, data);
     }
 
     @Override
-    public boolean hasCurrentSession(UUID session) {
-        return calibrated$currentSessions.contains(session);
+    public SessionData activateSession(UUID session, int ticks) {
+        SessionData data = calibrated$sessions.get(session);
+        data.active = true;
+        data.ticks = ticks;
+        return data;
+    }
+
+    @Override
+    public void removeSession(UUID session) {
+        calibrated$sessions.remove(session);
+    }
+
+    @Override
+    public SessionData getSession(UUID session) {
+        return calibrated$sessions.get(session);
+    }
+
+    @Inject(method = "tick", at = @At("TAIL"))
+    private void calibrated$serverTickDownAccess(CallbackInfo ci) {
+        Entity entity = (Entity) (Object) this;
+        if (!(entity instanceof ServerPlayerEntity player)) {
+            return;
+        }
+        // Small optimization to not instantiate a new removal list every tick
+        List<UUID> toRemove = null;
+        for (Map.Entry<UUID, SessionData> ticker : calibrated$sessions.entrySet()) {
+            if (ticker.getValue().ticks <= 0) {
+                return;
+            }
+            ticker.getValue().ticks--;
+            if (ticker.getValue().ticks == 0) {
+                RemoteUser.removeUsingSession(player, ticker.getKey());
+                if (toRemove == null) {
+                    toRemove = new ArrayList<>();
+                    toRemove.add(ticker.getKey());
+                }
+            }
+        }
+        if (toRemove != null) {
+            for (UUID session : toRemove) {
+                calibrated$sessions.remove(session);
+            }
+        }
     }
 
     // Screen handlers call this method in some way, just not consistently.
     // Automatic validation - if this call doesn't go through on the server, no slot/GUI actions will be submitted
     @Inject(method = "squaredDistanceTo(DDD)D", cancellable = true, at = @At("HEAD"))
     private void calibrated$fakeDistance(double x, double y, double z, CallbackInfoReturnable<Double> cir) {
-        for (BlockPos pos : calibrated$usingSessions.values()) {
+        for (SessionData data : calibrated$sessions.values()) {
+            // Inactive sessions do not need to be counted in this search
+            if (!data.active) {
+                continue;
+            }
             // This is an important math method that can be used elsewhere, so make sure we're targeting the synced position
+            BlockPos pos = data.syncedPos;
             if (pos.getX() == (int) (x - 0.5)
                     && pos.getY() == (int) (y - 0.5)
                     && pos.getZ() == (int) (z - 0.5)) {
@@ -72,34 +104,24 @@ public class EntityMixin implements RemoteUser {
 
     @Inject(method = "writeNbt", at = @At("TAIL"))
     private void calibrated$writeNbt(NbtCompound nbt, CallbackInfoReturnable<NbtCompound> cir) {
-        if (!calibrated$usingSessions.isEmpty()) {
-            nbt.put("calibrated$UsingSessions", SessionMapHelper.toNbt(
-                    calibrated$usingSessions,
-                    (cpd, pos) -> cpd.putLong("SyncedPos", pos.asLong()))
-            );
-        }
-        if (!calibrated$currentSessions.isEmpty()) {
-            NbtList currentSessions = new NbtList();
-            for (UUID session : calibrated$currentSessions) {
-                currentSessions.add(NbtHelper.fromUuid(session));
+        if (!calibrated$sessions.isEmpty()) {
+            NbtList sessionEntries = new NbtList();
+            for (Map.Entry<UUID, SessionData> entry : calibrated$sessions.entrySet()) {
+                NbtCompound cpd = new NbtCompound();
+                cpd.putUuid("Session", entry.getKey());
+                cpd.put("Data", entry.getValue().toNbt());
+                sessionEntries.add(cpd);
             }
-            nbt.put("calibrated$CurrentSessions", currentSessions);
+            nbt.put("calibrated$Sessions", sessionEntries);
         }
     }
 
     @Inject(method = "readNbt", at = @At("TAIL"))
     private void calibrated$readNbt(NbtCompound nbt, CallbackInfo ci) {
-        if (nbt.contains("calibrated$UsingSessions")) {
-            calibrated$usingSessions.putAll(SessionMapHelper.readNbt(
-                    nbt, "calibrated$UsingSessions",
-                    cpd -> BlockPos.fromLong(cpd.getLong("SyncedPos")))
-            );
-        }
-        if (nbt.contains("calibrated$CurrentSessions")) {
-            NbtList currentSessions = nbt.getList("calibrated$CurrentSessions", NbtElement.INT_ARRAY_TYPE);
-            for (NbtElement element : currentSessions) {
-                calibrated$currentSessions.add(NbtHelper.toUuid(element));
-            }
+        NbtList sessions = nbt.getList("calibrated$Sessions", NbtElement.COMPOUND_TYPE);
+        for (int i = 0; i < sessions.size(); i++) {
+            NbtCompound entry = sessions.getCompound(i);
+            calibrated$sessions.put(entry.getUuid("Session"), SessionData.fromNbt(nbt.getCompound("Data")));
         }
     }
 }

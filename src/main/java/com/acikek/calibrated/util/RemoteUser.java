@@ -8,27 +8,36 @@ import java.util.UUID;
 
 public interface RemoteUser {
 
-    // player calibrates remote:
-        // adds UUID session to queue
-    // remote is a "different remote" if the session is in the usingRemotes map but not in the sessions queue
+    SessionData addSession(UUID session, SessionData data);
 
-    void addUsingSession(UUID session, BlockPos syncedPos);
+    default SessionData addSession(UUID session, BlockPos syncedPos) {
+        return addSession(session, new SessionData(syncedPos, false, 0));
+    }
 
-    void removeUsingSession(UUID session);
+    void setSessionData(UUID session, SessionData data);
 
-    void addSession(UUID uuid);
+    SessionData activateSession(UUID session, int ticks);
 
-    boolean hasUsingSession(UUID session);
+    void removeSession(UUID session);
 
-    boolean hasCurrentSession(UUID session);
+    SessionData getSession(UUID session);
 
-    static void addUsingSession(ServerPlayerEntity player, UUID session, BlockPos syncedPos) {
-        ((RemoteUser) player).addUsingSession(session, syncedPos);
-        CANetworking.s2cModifyUsingSession(player, session, syncedPos);
+    default boolean hasSession(UUID session) {
+        return getSession(session) != null;
+    }
+
+    static void addSession(ServerPlayerEntity player, UUID session, BlockPos syncedPos) {
+        SessionData data = ((RemoteUser) player).addSession(session, syncedPos);
+        CANetworking.s2cModifySession(player, session, data, CANetworking.SessionModifier.ADD);
+    }
+
+    static void activateSession(ServerPlayerEntity player, UUID session, int ticks) {
+        SessionData data = ((RemoteUser) player).activateSession(session, ticks);
+        CANetworking.s2cModifySession(player, session, data, CANetworking.SessionModifier.SET);
     }
 
     static void removeUsingSession(ServerPlayerEntity player, UUID session) {
-        ((RemoteUser) player).removeUsingSession(session);
-        CANetworking.s2cModifyUsingSession(player, session, null);
+        ((RemoteUser) player).removeSession(session);
+        CANetworking.s2cModifySession(player, session, null, CANetworking.SessionModifier.REMOVE);
     }
 }
