@@ -2,7 +2,6 @@ package com.acikek.calibrated.item.remote;
 
 import com.acikek.calibrated.CalibratedAccess;
 import com.acikek.calibrated.sound.CASoundEvents;
-import com.acikek.calibrated.util.AccessTicker;
 import com.acikek.calibrated.util.RemoteUser;
 import com.acikek.datacriteria.api.DataCriteriaAPI;
 import com.acikek.datacriteria.api.Parameters;
@@ -89,15 +88,11 @@ public class RemoteItem extends Item implements FabricItem {
         nbt.remove("CustomModelData");
         UUID session = UUID.randomUUID();
         nbt.putUuid("Session", session);
+        // Called on both server and client, no need for networking call
         RemoteUser remoteUser = (RemoteUser) player;
-        remoteUser.setSession(session);
+        remoteUser.addSession(session, pos);
         if (!remoteType.unlimited()) {
             nbt.putInt("Accesses", remoteType.accesses());
-        }
-        // Called on both server and client, no need for networking call
-        remoteUser.setUsingRemote(null, null);
-        if (player instanceof AccessTicker accessTicker) {
-            accessTicker.setAccessTicks(0);
         }
         playSound(CASoundEvents.REMOTE_SYNC, 0.85f + world.random.nextFloat() * 0.3f, player, world);
     }
@@ -106,12 +101,11 @@ public class RemoteItem extends Item implements FabricItem {
     public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
         ItemStack stack = user.getStackInHand(hand);
         // Run on server to validate world and guarantee proper block entity fetching.
-        if (!world.isClient()) {
+        if (user instanceof ServerPlayerEntity player) {
             NbtCompound nbt = stack.getOrCreateNbt();
-            boolean isDifferentRemote = isDifferentRemote(nbt, user);
-            UseResult result = use(nbt, isDifferentRemote, world, user);
+            UseResult result = use(nbt, world, player);
             if (result != UseResult.SUCCESS) {
-                fail(nbt, result == UseResult.DESYNC, result != UseResult.INVALID_WORLD, isDifferentRemote, user, world);
+                fail(nbt, result != UseResult.INVALID_WORLD, player, world);
                 user.sendMessage(result.message, true);
             }
             return TypedActionResult.pass(stack);
@@ -119,22 +113,17 @@ public class RemoteItem extends Item implements FabricItem {
         return super.use(world, user, hand);
     }
 
-    public static boolean isDifferentRemote(NbtCompound nbt, PlayerEntity player) {
-        RemoteUser remoteUser = (RemoteUser) player;
-        return remoteUser.isUsingRemote() && (!nbt.contains("Session") || !remoteUser.getUsingSession().equals(nbt.getUuid("Session")));
+    public boolean canTryAccess(NbtCompound nbt) {
+        return nbt.contains("SyncedPos") && (remoteType.unlimited() || nbt.getInt("Accesses") >= 1);
     }
 
-    public boolean canTryAccess(NbtCompound nbt, RemoteUser remoteUser, boolean isDifferentRemote) {
-        return nbt.contains("SyncedPos") && (remoteType.unlimited() || nbt.getInt("Accesses") >= 1 || (remoteUser.isUsingRemote() && !isDifferentRemote));
-    }
-
-    public UseResult use(NbtCompound nbt, boolean isDifferentRemote, World world, PlayerEntity player) {
+    public UseResult use(NbtCompound nbt, World world, ServerPlayerEntity player) {
         RemoteUser remoteUser = (RemoteUser) player;
-        if (!canTryAccess(nbt, remoteUser, isDifferentRemote)) {
+        if (!canTryAccess(nbt)) {
             return UseResult.CANNOT_ACCESS;
         }
-        // Prevents a player from using more than one remote at once
-        if (!remoteUser.hasSession() || !remoteUser.getSession().equals(nbt.getUuid("Session"))) {
+        // Prevents a player from using a remote that isn't matched with the player
+        if (!remoteUser.hasSession(nbt.getUuid("Session"))) {
             return UseResult.INVALID_SESSION;
         }
         // Prevents interdimensional accesses for remotes that do not have this ability
@@ -151,31 +140,30 @@ public class RemoteItem extends Item implements FabricItem {
         if (targetWorld == null) {
             return UseResult.INVALID_WORLD;
         }
-        ServerPlayerEntity serverPlayer = (ServerPlayerEntity) player;
         // Prevents accesses to non-screen blocks (if they have been broken)
         // This is considered irreversible and will desync the remote
         BlockPos pos = BlockPos.fromLong(nbt.getLong("SyncedPos"));
         NamedScreenHandlerFactory screen = getScreen(targetWorld, pos);
         if (screen != null) {
-            activate(nbt, isDifferentRemote, serverPlayer, world, targetWorld, interdimensional, screen, pos);
+            activate(nbt, player, world, targetWorld, interdimensional, screen, pos);
             return UseResult.SUCCESS;
         }
         return UseResult.DESYNC;
     }
 
-    public void activate(NbtCompound nbt, boolean isDifferentRemote, ServerPlayerEntity player, World world, ServerWorld targetWorld, boolean interdimensional, NamedScreenHandlerFactory screen, BlockPos pos) {
+    public void activate(NbtCompound nbt, ServerPlayerEntity player, World world, ServerWorld targetWorld, boolean interdimensional, NamedScreenHandlerFactory screen, BlockPos pos) {
         RemoteUser remoteUser = ((RemoteUser) player);
-        if (!remoteUser.isUsingRemote() || isDifferentRemote) {
-            RemoteUser.setUsingRemote(player, pos, remoteUser.getSession());
+        UUID session = nbt.getUuid("Session");
+        boolean sessionActive = remoteUser.isSessionActive(session);
+        if (!sessionActive) {
+            RemoteUser.activateSession(player, session, ACCESS_TICKS);
         }
         player.openHandledScreen(screen);
-        AccessTicker accessPlayer = ((AccessTicker) player);
         // Players can remove an activated remote from their inventory, and this will stop inventoryTick calls,
-        // but that's purely visual and the valuable ticking happens in the server player mixin.
-        if (remoteType.unlimited() || !accessPlayer.isAccessing() || isDifferentRemote) {
+        // but that's purely visual and the valuable ticking happens in the entity mixin.
+        if (remoteType.unlimited() || !sessionActive) {
             if (!remoteType.unlimited()) {
                 nbt.putInt("Accesses", nbt.getInt("Accesses") - 1);
-                accessPlayer.setAccessTicks(ACCESS_TICKS);
             }
             nbt.putInt("VisualTicks", remoteType.unlimited() ? STATUS_TICKS : ACCESS_TICKS);
             nbt.putInt("CustomModelData", 1);
@@ -184,23 +172,21 @@ public class RemoteItem extends Item implements FabricItem {
         triggerRemoteUsed(player, targetWorld, pos, interdimensional);
     }
 
-    public void fail(NbtCompound nbt, boolean desync, boolean eraseInfo, boolean isDifferentRemote, PlayerEntity player, World world) {
-        if (desync) {
-            nbt.remove("Session");
-            ((RemoteUser) player).setSession(null);
-        }
+    public void fail(NbtCompound nbt, boolean eraseInfo, ServerPlayerEntity player, World world) {
         // If the remote needs to be recalibrated anyways
         if (eraseInfo) {
             nbt.remove("SyncedPos");
             nbt.remove("SyncedWorld");
             nbt.remove("SyncedNameKey");
             nbt.remove("Accesses");
+            if (nbt.contains("Session")) {
+                UUID session = nbt.getUuid("Session");
+                nbt.remove("Session");
+                RemoteUser.removeSession(player, session);
+            }
         }
         nbt.putInt("VisualTicks", STATUS_TICKS);
         nbt.putInt("CustomModelData", 2);
-        if (!isDifferentRemote && player instanceof ServerPlayerEntity serverPlayer) {
-            RemoteUser.setUsingRemote(serverPlayer, null, null);
-        }
         player.getItemCooldownManager().set(this, 40);
         playSound(CASoundEvents.REMOTE_FAIL, 1.0f, player, world);
     }

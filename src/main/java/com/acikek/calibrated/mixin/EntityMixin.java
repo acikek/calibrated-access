@@ -69,7 +69,7 @@ public class EntityMixin implements RemoteUser {
             }
             ticker.getValue().ticks--;
             if (ticker.getValue().ticks == 0) {
-                RemoteUser.removeUsingSession(player, ticker.getKey());
+                RemoteUser.removeSession(player, ticker.getKey());
                 if (toRemove == null) {
                     toRemove = new ArrayList<>();
                     toRemove.add(ticker.getKey());

@@ -26,6 +26,10 @@ public interface RemoteUser {
         return getSession(session) != null;
     }
 
+    default boolean isSessionActive(UUID session) {
+        return getSession(session).active;
+    }
+
     static void addSession(ServerPlayerEntity player, UUID session, BlockPos syncedPos) {
         SessionData data = ((RemoteUser) player).addSession(session, syncedPos);
         CANetworking.s2cModifySession(player, session, data, CANetworking.SessionModifier.ADD);
@@ -36,7 +40,7 @@ public interface RemoteUser {
         CANetworking.s2cModifySession(player, session, data, CANetworking.SessionModifier.SET);
     }
 
-    static void removeUsingSession(ServerPlayerEntity player, UUID session) {
+    static void removeSession(ServerPlayerEntity player, UUID session) {
         ((RemoteUser) player).removeSession(session);
         CANetworking.s2cModifySession(player, session, null, CANetworking.SessionModifier.REMOVE);
     }
