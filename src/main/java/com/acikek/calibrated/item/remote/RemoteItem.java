@@ -84,6 +84,7 @@ public class RemoteItem extends Item implements FabricItem {
         nbt.putLong("SyncedPos", pos.asLong());
         nbt.putString("SyncedWorld", world.getRegistryKey().getValue().toString());
         nbt.putString("SyncedNameKey", state.getBlock().asItem().getTranslationKey());
+        // Remove animations if any are present
         nbt.remove("VisualTicks");
         nbt.remove("CustomModelData");
         UUID session = UUID.randomUUID();
@@ -93,6 +94,7 @@ public class RemoteItem extends Item implements FabricItem {
         if (!remoteType.unlimited()) {
             nbt.putInt("Accesses", remoteType.accesses());
         }
+        // Called on both server and client, no need for networking call
         remoteUser.setUsingRemote(null, null);
         if (player instanceof AccessTicker accessTicker) {
             accessTicker.setAccessTicks(0);
@@ -184,12 +186,14 @@ public class RemoteItem extends Item implements FabricItem {
 
     public void fail(NbtCompound nbt, boolean desync, boolean isDifferentRemote, PlayerEntity player, World world) {
         if (desync) {
-            nbt.remove("SyncedPos");
-            nbt.remove("SyncedWorld");
-            nbt.remove("SyncedNameKey");
             nbt.remove("Session");
             ((RemoteUser) player).setSession(null);
         }
+        // This remote needs to be recalibrated anyways
+        nbt.remove("SyncedPos");
+        nbt.remove("SyncedWorld");
+        nbt.remove("SyncedNameKey");
+        nbt.remove("Accesses");
         nbt.putInt("VisualTicks", STATUS_TICKS);
         nbt.putInt("CustomModelData", 2);
         if (!isDifferentRemote && player instanceof ServerPlayerEntity serverPlayer) {
