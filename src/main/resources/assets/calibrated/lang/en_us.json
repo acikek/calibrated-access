@@ -12,5 +12,13 @@
   "subtitles.calibrated.remote_accessor.sync": "Accessor synchronizes",
   "subtitles.calibrated.remote_accessor.open": "Accessor used",
   "subtitles.calibrated.remote_accessor.fail": "Accessor fails",
+  "advancements.calibrated.remote.title": "An Unusual Accessor",
+  "advancements.calibrated.remote.description": "Obtain a Remote Accessor to open screens from afar",
+  "advancements.calibrated.interdimensional.title": "I Need a Moment",
+  "advancements.calibrated.interdimensional.description": "Reach a block from another dimension with a Skilled Accessor or higher",
+  "advancements.calibrated.unlimited.title": "There Goes Balance",
+  "advancements.calibrated.unlimited.description": "Upgrade to an Unlimited Accessor for ultimate remote access",
+  "advancements.calibrated.target_enchanting_table.title": "Excessive Portability",
+  "advancements.calibrated.target_enchanting_table.description": "Access an Enchanting Table. That's a bit overboard, isn't it?",
   "tag.calibrated.remotes": "Remote Accessors"
 }
