@@ -18,6 +18,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
+import net.minecraft.stat.Stats;
 import net.minecraft.text.Text;
 import net.minecraft.util.*;
 import net.minecraft.util.math.BlockPos;
@@ -45,6 +46,9 @@ public class RemoteItem extends Item implements FabricItem {
                             .formatted(Formatting.RED);
         }
     }
+
+    public static final Identifier ACCESS = CalibratedAccess.id("remote");
+    public static final Identifier CREATE_SESSION = CalibratedAccess.id("create_session");
 
     public static final int ACCESS_TICKS = 15 * 20;
     public static final int STATUS_TICKS = 3 * 20;
@@ -98,6 +102,7 @@ public class RemoteItem extends Item implements FabricItem {
             nbt.putInt("Accesses", remoteType.accesses());
         }
         playSound(CASoundEvents.REMOTE_SYNC, 0.85f + world.random.nextFloat() * 0.3f, player, world);
+        player.incrementStat(CREATE_SESSION);
     }
 
     @Override
@@ -174,6 +179,7 @@ public class RemoteItem extends Item implements FabricItem {
         }
         playSound(CASoundEvents.REMOTE_OPEN, 1.0f, player, world);
         triggerRemoteUsed(player, targetWorld, pos, interdimensional);
+        player.incrementStat(ACCESS);
     }
 
     public void fail(NbtCompound nbt, boolean eraseInfo, ServerPlayerEntity player, World world) {
@@ -248,5 +254,15 @@ public class RemoteItem extends Item implements FabricItem {
     @Override
     public int getItemBarColor(ItemStack stack) {
         return 6743789;
+    }
+
+    public static void registerStat(Identifier id) {
+        Registry.register(Registry.CUSTOM_STAT, id, id);
+        Stats.CUSTOM.getOrCreateStat(id);
+    }
+
+    public static void registerStats() {
+        registerStat(ACCESS);
+        registerStat(CREATE_SESSION);
     }
 }

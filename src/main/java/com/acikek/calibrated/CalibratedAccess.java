@@ -1,6 +1,7 @@
 package com.acikek.calibrated;
 
 import com.acikek.calibrated.item.CAItems;
+import com.acikek.calibrated.item.remote.RemoteItem;
 import com.acikek.calibrated.sound.CASoundEvents;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.itemgroup.FabricItemGroupBuilder;
@@ -28,6 +29,7 @@ public class CalibratedAccess implements ModInitializer {
     public void onInitialize() {
         CAItems.register();
         CASoundEvents.register();
+        RemoteItem.registerStats();
         registerGamerule();
     }
 
