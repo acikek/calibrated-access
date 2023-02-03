@@ -16,15 +16,17 @@ public class CAItems {
     public static List<RemoteItem> remotes = new ArrayList<>();
 
     public static final Item CALIBRATOR = new Item(settings());
-    public static final RemoteItem NOVICE_ACCESSOR = new RemoteItem(settings(), RemoteType.NOVICE);
-    public static final RemoteItem SKILLED_ACCESSOR = new RemoteItem(settings().rarity(Rarity.UNCOMMON), RemoteType.SKILLED);
-    public static final RemoteItem EXPERT_ACCESSOR = new RemoteItem(settings().rarity(Rarity.UNCOMMON), RemoteType.EXPERT);
-    public static final RemoteItem UNLIMITED_ACCESSOR = new RemoteItem(settings().rarity(Rarity.RARE).fireproof(), RemoteType.UNLIMITED);
+    public static final RemoteItem NOVICE_ACCESSOR = new RemoteItem(remoteSettings(), RemoteType.NOVICE);
+    public static final RemoteItem SKILLED_ACCESSOR = new RemoteItem(remoteSettings().rarity(Rarity.UNCOMMON), RemoteType.SKILLED);
+    public static final RemoteItem EXPERT_ACCESSOR = new RemoteItem(remoteSettings().rarity(Rarity.UNCOMMON), RemoteType.EXPERT);
+    public static final RemoteItem UNLIMITED_ACCESSOR = new RemoteItem(remoteSettings().rarity(Rarity.RARE).fireproof(), RemoteType.UNLIMITED);
 
     public static Item.Settings settings() {
-        return new FabricItemSettings()
-                .group(CalibratedAccess.ITEM_GROUP)
-                .maxCount(1);
+        return new FabricItemSettings().group(CalibratedAccess.ITEM_GROUP);
+    }
+
+    public static Item.Settings remoteSettings() {
+        return settings().maxCount(1);
     }
 
     public static void register(String name, Item item) {

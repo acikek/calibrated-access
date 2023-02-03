@@ -84,11 +84,18 @@ public class RemoteItem extends Item implements FabricItem {
         nbt.putLong("SyncedPos", pos.asLong());
         nbt.putString("SyncedWorld", world.getRegistryKey().getValue().toString());
         nbt.putString("SyncedNameKey", state.getBlock().asItem().getTranslationKey());
+        nbt.remove("VisualTicks");
+        nbt.remove("CustomModelData");
         UUID session = UUID.randomUUID();
         nbt.putUuid("Session", session);
-        ((RemoteUser) player).setSession(session);
+        RemoteUser remoteUser = (RemoteUser) player;
+        remoteUser.setSession(session);
         if (!remoteType.unlimited()) {
             nbt.putInt("Accesses", remoteType.accesses());
+        }
+        remoteUser.setUsingRemote(null, null);
+        if (player instanceof AccessTicker accessTicker) {
+            accessTicker.setAccessTicks(0);
         }
         playSound(CASoundEvents.REMOTE_SYNC, 0.85f + world.random.nextFloat() * 0.3f, player, world);
     }
@@ -112,16 +119,16 @@ public class RemoteItem extends Item implements FabricItem {
 
     public static boolean isDifferentRemote(NbtCompound nbt, PlayerEntity player) {
         RemoteUser remoteUser = (RemoteUser) player;
-        return remoteUser.isUsingRemote() && !remoteUser.getUsingSession().equals(nbt.getUuid("Session"));
+        return remoteUser.isUsingRemote() && (!nbt.contains("Session") || !remoteUser.getUsingSession().equals(nbt.getUuid("Session")));
     }
 
-    public boolean canTryAccess(NbtCompound nbt, RemoteUser remoteUser) {
-        return nbt.contains("SyncedPos") && (remoteType.unlimited() || nbt.getInt("Accesses") >= 1 || (remoteUser != null && remoteUser.isUsingRemote()));
+    public boolean canTryAccess(NbtCompound nbt, RemoteUser remoteUser, boolean isDifferentRemote) {
+        return nbt.contains("SyncedPos") && (remoteType.unlimited() || nbt.getInt("Accesses") >= 1 || (remoteUser.isUsingRemote() && !isDifferentRemote));
     }
 
     public UseResult use(NbtCompound nbt, boolean isDifferentRemote, World world, PlayerEntity player) {
         RemoteUser remoteUser = (RemoteUser) player;
-        if (!canTryAccess(nbt, remoteUser)) {
+        if (!canTryAccess(nbt, remoteUser, isDifferentRemote)) {
             return UseResult.CANNOT_ACCESS;
         }
         // Prevents a player from using more than one remote at once
@@ -211,7 +218,7 @@ public class RemoteItem extends Item implements FabricItem {
         }
         int ticks = nbt.getInt("VisualTicks");
         ticks--;
-        if (ticks == 0) {
+        if (ticks <= 0) {
             nbt.remove("VisualTicks");
             nbt.remove("CustomModelData");
             return;
@@ -226,7 +233,7 @@ public class RemoteItem extends Item implements FabricItem {
 
     @Override
     public boolean isItemBarVisible(ItemStack stack) {
-        return !remoteType.unlimited() && stack.hasNbt() && canTryAccess(stack.getOrCreateNbt(), null);
+        return !remoteType.unlimited() && stack.hasNbt() && stack.getOrCreateNbt().contains("SyncedPos");
     }
 
     @Override
