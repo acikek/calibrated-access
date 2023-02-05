@@ -16,6 +16,7 @@ import java.util.List;
 public class CAGameRules implements ServerPlayConnectionEvents.Join {
 
     public static GameRules.Key<GameRules.IntRule> MAX_SESSIONS;
+    public static GameRules.Key<GameRules.BooleanRule> ALLOW_ID_MISMATCH;
 
     public static int getMaxSessions(World world) {
         return world.isClient()
@@ -35,6 +36,11 @@ public class CAGameRules implements ServerPlayConnectionEvents.Join {
                 GameRuleFactory.createIntRule(1, 1, (server, rule) ->
                     CANetworking.s2cSetMaxSessions(server.getPlayerManager().getPlayerList(), rule.get())
                 )
+        );
+        ALLOW_ID_MISMATCH = GameRuleRegistry.register(
+                "allowSyncedIdMismatch",
+                GameRules.Category.MISC,
+                GameRuleFactory.createBooleanRule(true)
         );
         ServerPlayConnectionEvents.JOIN.register(new CAGameRules());
     }

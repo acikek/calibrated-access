@@ -7,6 +7,7 @@ import com.acikek.calibrated.util.RemoteUser;
 import com.acikek.datacriteria.api.DataCriteriaAPI;
 import com.acikek.datacriteria.api.Parameters;
 import net.fabricmc.fabric.api.item.v1.FabricItem;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.item.TooltipContext;
 import net.minecraft.entity.Entity;
@@ -35,23 +36,6 @@ import java.util.UUID;
 
 public class RemoteItem extends Item implements FabricItem {
 
-    public enum UseResult {
-
-        SUCCESS(false),
-        CANNOT_ACCESS(true),
-        INVALID_SESSION(true),
-        INVALID_WORLD(true),
-        DESYNC(true);
-
-        public final Text message;
-
-        UseResult(boolean error) {
-            message = !error ? null
-                    : Text.translatable("error.calibrated." + name().toLowerCase())
-                            .formatted(Formatting.RED);
-        }
-    }
-
     public static final Identifier ACCESS = CalibratedAccess.id("remote");
     public static final Identifier CREATE_SESSION = CalibratedAccess.id("create_session");
 
@@ -65,11 +49,11 @@ public class RemoteItem extends Item implements FabricItem {
         this.remoteType = remoteType;
     }
 
-    public static NamedScreenHandlerFactory getScreen(World world, BlockPos pos) {
+    public static NamedScreenHandlerFactory getScreen(World world, BlockPos pos, BlockState state) {
         if (world.getBlockEntity(pos) instanceof NamedScreenHandlerFactory screen) {
             return screen;
         }
-        return world.getBlockState(pos).createScreenHandlerFactory(world, pos);
+        return state.createScreenHandlerFactory(world, pos);
     }
 
     public static void triggerRemoteUsed(ServerPlayerEntity player, ServerWorld world, BlockPos targetPos, boolean interdimensional) {
@@ -79,10 +63,11 @@ public class RemoteItem extends Item implements FabricItem {
     @Override
     public ActionResult useOnBlock(ItemUsageContext context) {
         BlockPos pos = context.getBlockPos();
-        NamedScreenHandlerFactory screen = getScreen(context.getWorld(), pos);
+        BlockState state = context.getWorld().getBlockState(pos);
+        NamedScreenHandlerFactory screen = getScreen(context.getWorld(), pos, state);
         if (screen != null) {
             NbtCompound nbt = context.getStack().getOrCreateNbt();
-            calibrate(nbt, context.getPlayer(), context.getWorld(), pos, context.getWorld().getBlockState(pos));
+            calibrate(nbt, context.getPlayer(), context.getWorld(), pos, state);
             return ActionResult.SUCCESS;
         }
         return super.useOnBlock(context);
@@ -91,7 +76,7 @@ public class RemoteItem extends Item implements FabricItem {
     public void calibrate(NbtCompound nbt, PlayerEntity player, World world, BlockPos pos, BlockState state) {
         nbt.putLong("SyncedPos", pos.asLong());
         nbt.putString("SyncedWorld", world.getRegistryKey().getValue().toString());
-        nbt.putString("SyncedNameKey", state.getBlock().asItem().getTranslationKey());
+        syncBlock(nbt, state.getBlock());
         // Remove animations if any are present
         nbt.remove("VisualTicks");
         nbt.remove("CustomModelData");
@@ -110,6 +95,13 @@ public class RemoteItem extends Item implements FabricItem {
         player.incrementStat(CREATE_SESSION);
     }
 
+    public static void syncBlock(NbtCompound nbt, Block block) {
+        nbt.putString("SyncedId", Registry.BLOCK.getId(block).toString());
+        Text text =  Text.translatable(block.getTranslationKey())
+                .formatted(block.asItem().getRarity(block.asItem().getDefaultStack()).formatting);
+        nbt.putString("SyncedText", Text.Serializer.toJson(text));
+    }
+
     @Override
     public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
         ItemStack stack = user.getStackInHand(hand);
@@ -118,7 +110,7 @@ public class RemoteItem extends Item implements FabricItem {
             NbtCompound nbt = stack.getOrCreateNbt();
             UseResult result = use(nbt, world, player);
             if (result != UseResult.SUCCESS) {
-                fail(nbt, result != UseResult.INVALID_WORLD, player, world);
+                fail(nbt, result.eraseInfo, player, world);
                 user.sendMessage(result.message, true);
             }
             return TypedActionResult.pass(stack);
@@ -140,6 +132,7 @@ public class RemoteItem extends Item implements FabricItem {
             return UseResult.INVALID_SESSION;
         }
         // Prevents interdimensional accesses for remotes that do not have this ability
+        // This is not considered irreversible as the player can move back to the proper dimension
         Identifier worldId = new Identifier(nbt.getString("SyncedWorld"));
         boolean interdimensional = !world.getRegistryKey().getValue().equals(worldId);
         if (interdimensional && !remoteType.interdimensional()) {
@@ -153,18 +146,24 @@ public class RemoteItem extends Item implements FabricItem {
         if (targetWorld == null) {
             return UseResult.INVALID_WORLD;
         }
-        // Prevents accesses to non-screen blocks (if they have been broken)
-        // This is considered irreversible and will desync the remote
+        // Prevents accesses to target blovks with different IDs if the gamerule disallows it
         BlockPos pos = BlockPos.fromLong(nbt.getLong("SyncedPos"));
-        NamedScreenHandlerFactory screen = getScreen(targetWorld, pos);
+        BlockState state = targetWorld.getBlockState(pos);
+        Identifier syncedId = new Identifier(nbt.getString("SyncedId"));
+        boolean differentSyncedId = !Registry.BLOCK.getId(state.getBlock()).equals(syncedId);
+        if (differentSyncedId && !world.getGameRules().getBoolean(CAGameRules.ALLOW_ID_MISMATCH)) {
+            return UseResult.INVALID_ID;
+        }
+        // Prevents accesses to non-screen blocks (if they have been broken)
+        NamedScreenHandlerFactory screen = getScreen(targetWorld, pos, state);
         if (screen != null) {
-            activate(nbt, player, world, targetWorld, interdimensional, screen, pos);
+            activate(nbt, player, world, targetWorld, interdimensional, differentSyncedId, screen, pos, state);
             return UseResult.SUCCESS;
         }
         return UseResult.DESYNC;
     }
 
-    public void activate(NbtCompound nbt, ServerPlayerEntity player, World world, ServerWorld targetWorld, boolean interdimensional, NamedScreenHandlerFactory screen, BlockPos pos) {
+    public void activate(NbtCompound nbt, ServerPlayerEntity player, World world, ServerWorld targetWorld, boolean interdimensional, boolean differentSyncedId, NamedScreenHandlerFactory screen, BlockPos pos, BlockState state) {
         RemoteUser remoteUser = ((RemoteUser) player);
         UUID session = nbt.getUuid("Session");
         boolean sessionActive = remoteUser.isSessionActive(session);
@@ -181,9 +180,10 @@ public class RemoteItem extends Item implements FabricItem {
             nbt.putInt("VisualTicks", remoteType.unlimited() ? STATUS_TICKS : ACCESS_TICKS);
             nbt.putInt("CustomModelData", 1);
         }
-        // Replace translation key in case this target is different from the original one calibrated. Rare but possible
-        // TODO track block ID and make gamerule for limiting this feature
-        nbt.putString("SyncedNameKey", targetWorld.getBlockState(pos).getBlock().getTranslationKey());
+        // Replace synced id/text in case this target is different from the original one calibrated. Rare but possible
+        if (differentSyncedId) {
+            syncBlock(nbt, state.getBlock());
+        }
         playSound(CASoundEvents.REMOTE_OPEN, 1.0f, player, world);
         triggerRemoteUsed(player, targetWorld, pos, interdimensional);
         player.incrementStat(ACCESS);
@@ -194,7 +194,8 @@ public class RemoteItem extends Item implements FabricItem {
         if (eraseInfo) {
             nbt.remove("SyncedPos");
             nbt.remove("SyncedWorld");
-            nbt.remove("SyncedNameKey");
+            nbt.remove("SyncedId");
+            nbt.remove("SyncedText");
             nbt.remove("Accesses");
             if (nbt.contains("Session")) {
                 UUID session = nbt.getUuid("Session");
@@ -267,9 +268,9 @@ public class RemoteItem extends Item implements FabricItem {
     public void appendTooltip(ItemStack stack, @Nullable World world, List<Text> tooltip, TooltipContext context) {
         if (context.isAdvanced() && stack.hasNbt()) {
             NbtCompound nbt = stack.getOrCreateNbt();
-            if (nbt.contains("SyncedNameKey")) {
-                Text nameKey =  Text.translatable(nbt.getString("SyncedNameKey"));
-                tooltip.add(Text.translatable("tooltip.calibrated.synced_name", nameKey).formatted(Formatting.GRAY));
+            if (nbt.contains("SyncedText")) {
+                Text text = Text.Serializer.fromJson(nbt.getString("SyncedText"));
+                tooltip.add(Text.translatable("tooltip.calibrated.synced_name", text).formatted(Formatting.GRAY));
             }
             if (nbt.contains("Accesses")) {
                 MutableText accesses = Text.translatable("tooltip.calibrated.accesses", nbt.getInt("Accesses"), remoteType.accesses());

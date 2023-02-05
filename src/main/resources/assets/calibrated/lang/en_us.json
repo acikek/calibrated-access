@@ -8,6 +8,7 @@
   "error.calibrated.cannot_access": "Not yet synchronized!",
   "error.calibrated.invalid_session": "Session mismatch!",
   "error.calibrated.invalid_world": "Unable to access from this world!",
+  "error.calibrated.invalid_id": "Target block mismatch!",
   "error.calibrated.desync": "Target block missing!",
   "subtitles.calibrated.remote_accessor.sync": "Accessor synchronizes",
   "subtitles.calibrated.remote_accessor.open": "Accessor used",
