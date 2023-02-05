@@ -1,6 +1,7 @@
 package com.acikek.calibrated.item.remote;
 
 import com.acikek.calibrated.CalibratedAccess;
+import com.acikek.calibrated.gamerule.CAGamerules;
 import com.acikek.calibrated.sound.CASoundEvents;
 import com.acikek.calibrated.util.RemoteUser;
 import com.acikek.datacriteria.api.DataCriteriaAPI;
@@ -97,7 +98,7 @@ public class RemoteItem extends Item implements FabricItem {
         }
         UUID session = UUID.randomUUID();
         nbt.putUuid("Session", session);
-        remoteUser.addSession(session, pos, world.getGameRules().getInt(CalibratedAccess.MAX_REMOTE_SESSIONS));
+        remoteUser.addSession(session, pos, CAGamerules.getMaxSessions(world));
         if (!remoteType.unlimited()) {
             nbt.putInt("Accesses", remoteType.accesses());
         }

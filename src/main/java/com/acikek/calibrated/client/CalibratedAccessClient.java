@@ -5,6 +5,8 @@ import net.fabricmc.api.ClientModInitializer;
 
 public class CalibratedAccessClient implements ClientModInitializer {
 
+    public static int maxSessions;
+
     @Override
     public void onInitializeClient() {
         CANetworking.registerClient();
