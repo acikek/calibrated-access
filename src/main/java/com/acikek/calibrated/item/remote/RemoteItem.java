@@ -135,7 +135,6 @@ public class RemoteItem extends Item implements FabricItem {
         if (!remoteUser.hasSession(nbt.getUuid("Session"))) {
             return UseResult.INVALID_SESSION;
         }
-        System.out.println(remoteUser.getSession(nbt.getUuid("Session")).toNbt());
         // Prevents interdimensional accesses for remotes that do not have this ability
         Identifier worldId = new Identifier(nbt.getString("SyncedWorld"));
         boolean interdimensional = !world.getRegistryKey().getValue().equals(worldId);

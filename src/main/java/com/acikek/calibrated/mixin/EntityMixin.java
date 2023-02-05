@@ -18,12 +18,18 @@ import java.util.*;
 @Mixin(Entity.class)
 public class EntityMixin implements RemoteUser {
 
-    // TODO only instantiate this when first access
-    private final Map<UUID, SessionData> calibrated$sessions = new LinkedHashMap<>();
+    private Map<UUID, SessionData> calibrated$sessions = null;
+
+    private Map<UUID, SessionData> calibrated$getSessions() {
+        if (calibrated$sessions == null) {
+            calibrated$sessions = new LinkedHashMap<>();
+        }
+        return calibrated$sessions;
+    }
 
     @Override
     public void addSession(UUID session, SessionData data, int maxSessions) {
-        calibrated$sessions.put(session, data);
+        calibrated$getSessions().put(session, data);
         if (calibrated$sessions.size() > maxSessions) {
             var iter = calibrated$sessions.entrySet().iterator();
             List<UUID> toRemove = new ArrayList<>();
@@ -31,7 +37,6 @@ public class EntityMixin implements RemoteUser {
                 toRemove.add(iter.next().getKey());
             }
             for (UUID uuid : toRemove) {
-                System.out.println(uuid);
                 calibrated$sessions.remove(uuid);
             }
         }
@@ -39,12 +44,12 @@ public class EntityMixin implements RemoteUser {
 
     @Override
     public void setSessionData(UUID session, SessionData data) {
-        calibrated$sessions.put(session, data);
+        calibrated$getSessions().put(session, data);
     }
 
     @Override
     public SessionData activateSession(UUID session, int ticks) {
-        SessionData data = calibrated$sessions.get(session);
+        SessionData data = calibrated$getSessions().get(session);
         data.active = true;
         data.ticks = ticks;
         return data;
@@ -52,16 +57,19 @@ public class EntityMixin implements RemoteUser {
 
     @Override
     public void removeSession(UUID session) {
-        calibrated$sessions.remove(session);
+        calibrated$getSessions().remove(session);
     }
 
     @Override
     public SessionData getSession(UUID session) {
-        return calibrated$sessions.get(session);
+        return calibrated$getSessions().get(session);
     }
 
     @Inject(method = "tick", at = @At("TAIL"))
     private void calibrated$serverTickDownAccess(CallbackInfo ci) {
+        if (calibrated$sessions == null) {
+            return;
+        }
         for (SessionData ticker : calibrated$sessions.values()) {
             if (!ticker.active) {
                 continue;
@@ -77,6 +85,9 @@ public class EntityMixin implements RemoteUser {
     // Automatic validation - if this call doesn't go through on the server, no slot/GUI actions will be submitted
     @Inject(method = "squaredDistanceTo(DDD)D", cancellable = true, at = @At("HEAD"))
     private void calibrated$fakeDistance(double x, double y, double z, CallbackInfoReturnable<Double> cir) {
+        if (calibrated$sessions == null) {
+            return;
+        }
         for (SessionData data : calibrated$sessions.values()) {
             // Inactive sessions do not need to be counted in this search
             if (!data.active) {
@@ -94,24 +105,28 @@ public class EntityMixin implements RemoteUser {
 
     @Inject(method = "writeNbt", at = @At("TAIL"))
     private void calibrated$writeNbt(NbtCompound nbt, CallbackInfoReturnable<NbtCompound> cir) {
-        if (!calibrated$sessions.isEmpty()) {
-            NbtList sessionEntries = new NbtList();
-            for (Map.Entry<UUID, SessionData> entry : calibrated$sessions.entrySet()) {
-                NbtCompound cpd = new NbtCompound();
-                cpd.putUuid("Session", entry.getKey());
-                cpd.put("Data", entry.getValue().toNbt());
-                sessionEntries.add(cpd);
-            }
-            nbt.put("calibrated$Sessions", sessionEntries);
+        if (calibrated$sessions == null || calibrated$sessions.isEmpty()) {
+            return;
         }
+        NbtList sessionEntries = new NbtList();
+        for (Map.Entry<UUID, SessionData> entry : calibrated$sessions.entrySet()) {
+            NbtCompound cpd = new NbtCompound();
+            cpd.putUuid("Session", entry.getKey());
+            cpd.put("Data", entry.getValue().toNbt());
+            sessionEntries.add(cpd);
+        }
+        nbt.put("calibrated$Sessions", sessionEntries);
     }
 
     @Inject(method = "readNbt", at = @At("TAIL"))
     private void calibrated$readNbt(NbtCompound nbt, CallbackInfo ci) {
+        if (!nbt.contains("calibrated$Sessions")) {
+            return;
+        }
         NbtList sessions = nbt.getList("calibrated$Sessions", NbtElement.COMPOUND_TYPE);
         for (int i = 0; i < sessions.size(); i++) {
             NbtCompound entry = sessions.getCompound(i);
-            calibrated$sessions.put(entry.getUuid("Session"), SessionData.fromNbt(entry.getCompound("Data")));
+            calibrated$getSessions().put(entry.getUuid("Session"), SessionData.fromNbt(entry.getCompound("Data")));
         }
     }
 }
