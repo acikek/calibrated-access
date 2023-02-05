@@ -8,6 +8,7 @@ import com.acikek.datacriteria.api.DataCriteriaAPI;
 import com.acikek.datacriteria.api.Parameters;
 import net.fabricmc.fabric.api.item.v1.FabricItem;
 import net.minecraft.block.BlockState;
+import net.minecraft.client.item.TooltipContext;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
@@ -20,13 +21,16 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.stat.Stats;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.*;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.World;
+import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
 import java.util.UUID;
 
 public class RemoteItem extends Item implements FabricItem {
@@ -177,6 +181,9 @@ public class RemoteItem extends Item implements FabricItem {
             nbt.putInt("VisualTicks", remoteType.unlimited() ? STATUS_TICKS : ACCESS_TICKS);
             nbt.putInt("CustomModelData", 1);
         }
+        // Replace translation key in case this target is different from the original one calibrated. Rare but possible
+        // TODO track block ID and make gamerule for limiting this feature
+        nbt.putString("SyncedNameKey", targetWorld.getBlockState(pos).getBlock().getTranslationKey());
         playSound(CASoundEvents.REMOTE_OPEN, 1.0f, player, world);
         triggerRemoteUsed(player, targetWorld, pos, interdimensional);
         player.incrementStat(ACCESS);
@@ -254,6 +261,22 @@ public class RemoteItem extends Item implements FabricItem {
     @Override
     public int getItemBarColor(ItemStack stack) {
         return 6743789;
+    }
+
+    @Override
+    public void appendTooltip(ItemStack stack, @Nullable World world, List<Text> tooltip, TooltipContext context) {
+        if (context.isAdvanced() && stack.hasNbt()) {
+            NbtCompound nbt = stack.getOrCreateNbt();
+            if (nbt.contains("SyncedNameKey")) {
+                Text nameKey =  Text.translatable(nbt.getString("SyncedNameKey"));
+                tooltip.add(Text.translatable("tooltip.calibrated.synced_name", nameKey).formatted(Formatting.GRAY));
+            }
+            if (nbt.contains("Accesses")) {
+                MutableText accesses = Text.translatable("tooltip.calibrated.accesses", nbt.getInt("Accesses"), remoteType.accesses());
+                tooltip.add(accesses.formatted(Formatting.GRAY));
+            }
+        }
+        super.appendTooltip(stack, world, tooltip, context);
     }
 
     public static void registerStat(Identifier id) {

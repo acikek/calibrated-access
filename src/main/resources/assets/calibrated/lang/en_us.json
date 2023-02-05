@@ -20,5 +20,7 @@
   "advancements.calibrated.unlimited.description": "Upgrade to an Unlimited Accessor for ultimate remote access",
   "advancements.calibrated.target_enchanting_table.title": "Excessive Portability",
   "advancements.calibrated.target_enchanting_table.description": "Access an Enchanting Table. That's a bit overboard, isn't it?",
+  "tooltip.calibrated.synced_name": "Synced to %s",
+  "tooltip.calibrated.accesses": "Accesses: %s / %s",
   "tag.calibrated.remotes": "Remote Accessors"
 }
