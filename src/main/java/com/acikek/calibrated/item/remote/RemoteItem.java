@@ -1,6 +1,7 @@
 package com.acikek.calibrated.item.remote;
 
 import com.acikek.calibrated.CalibratedAccess;
+import com.acikek.calibrated.api.impl.CalibratedAccessAPIImpl;
 import com.acikek.calibrated.gamerule.CAGameRules;
 import com.acikek.calibrated.sound.CASoundEvents;
 import com.acikek.calibrated.util.RemoteUser;
@@ -64,8 +65,8 @@ public class RemoteItem extends Item implements FabricItem {
     public ActionResult useOnBlock(ItemUsageContext context) {
         BlockPos pos = context.getBlockPos();
         BlockState state = context.getWorld().getBlockState(pos);
-        NamedScreenHandlerFactory screen = getScreen(context.getWorld(), pos, state);
-        if (screen != null) {
+        boolean hasListeners = CalibratedAccessAPIImpl.blockListeners.containsKey(state.getBlock());
+        if (hasListeners || getScreen(context.getWorld(), pos, state) != null) {
             NbtCompound nbt = context.getStack().getOrCreateNbt();
             calibrate(nbt, context.getPlayer(), context.getWorld(), pos, state);
             return ActionResult.SUCCESS;
@@ -108,10 +109,10 @@ public class RemoteItem extends Item implements FabricItem {
         // Run on server to validate world and guarantee proper block entity fetching.
         if (user instanceof ServerPlayerEntity player) {
             NbtCompound nbt = stack.getOrCreateNbt();
-            UseResult result = use(nbt, world, player);
-            if (result != UseResult.SUCCESS) {
-                fail(nbt, result.eraseInfo, player, world);
-                user.sendMessage(result.message, true);
+            RemoteUseResult result = use(stack, nbt, world, player);
+            if (result.isError()) {
+                fail(nbt, result.eraseInfo(), player, world);
+                user.sendMessage(result.getErrorMessage(), true);
             }
             return TypedActionResult.pass(stack);
         }
@@ -122,21 +123,21 @@ public class RemoteItem extends Item implements FabricItem {
         return nbt.contains("SyncedPos") && (remoteType.unlimited() || nbt.getInt("Accesses") >= 1);
     }
 
-    public UseResult use(NbtCompound nbt, World world, ServerPlayerEntity player) {
+    public RemoteUseResult use(ItemStack stack, NbtCompound nbt, World world, ServerPlayerEntity player) {
         RemoteUser remoteUser = (RemoteUser) player;
         if (!canTryAccess(nbt)) {
-            return UseResult.CANNOT_ACCESS;
+            return RemoteUseResult.CANNOT_ACCESS;
         }
         // Prevents a player from using a remote that isn't matched with the player
         if (!remoteUser.hasSession(nbt.getUuid("Session"))) {
-            return UseResult.INVALID_SESSION;
+            return RemoteUseResult.INVALID_SESSION;
         }
         // Prevents interdimensional accesses for remotes that do not have this ability
         // This is not considered irreversible as the player can move back to the proper dimension
         Identifier worldId = new Identifier(nbt.getString("SyncedWorld"));
         boolean interdimensional = !world.getRegistryKey().getValue().equals(worldId);
         if (interdimensional && !remoteType.interdimensional()) {
-            return UseResult.INVALID_WORLD;
+            return RemoteUseResult.INVALID_WORLD;
         }
         // Prevents accesses from invalid worlds
         ServerWorld serverWorld = (ServerWorld) world;
@@ -144,7 +145,7 @@ public class RemoteItem extends Item implements FabricItem {
                 ? serverWorld.getServer().getWorld(RegistryKey.of(Registry.WORLD_KEY, worldId))
                 : serverWorld;
         if (targetWorld == null) {
-            return UseResult.INVALID_WORLD;
+            return RemoteUseResult.INVALID_WORLD;
         }
         // Prevents accesses to target blovks with different IDs if the gamerule disallows it
         BlockPos pos = BlockPos.fromLong(nbt.getLong("SyncedPos"));
@@ -152,25 +153,34 @@ public class RemoteItem extends Item implements FabricItem {
         Identifier syncedId = new Identifier(nbt.getString("SyncedId"));
         boolean differentSyncedId = !Registry.BLOCK.getId(state.getBlock()).equals(syncedId);
         if (differentSyncedId && !world.getGameRules().getBoolean(CAGameRules.ALLOW_ID_MISMATCH)) {
-            return UseResult.INVALID_ID;
+            return RemoteUseResult.INVALID_ID;
         }
-        // Prevents accesses to non-screen blocks (if they have been broken)
-        NamedScreenHandlerFactory screen = getScreen(targetWorld, pos, state);
-        if (screen != null) {
-            activate(nbt, player, world, targetWorld, interdimensional, differentSyncedId, screen, pos, state);
-            return UseResult.SUCCESS;
-        }
-        return UseResult.DESYNC;
-    }
-
-    public void activate(NbtCompound nbt, ServerPlayerEntity player, World world, ServerWorld targetWorld, boolean interdimensional, boolean differentSyncedId, NamedScreenHandlerFactory screen, BlockPos pos, BlockState state) {
-        RemoteUser remoteUser = ((RemoteUser) player);
+        // Most checks passed; now onto activation
         UUID session = nbt.getUuid("Session");
         boolean sessionActive = remoteUser.isSessionActive(session);
+        // Invoke remote accessed event for custom block behavior, if any
+        RemoteUseResult invokedResult = CalibratedAccessAPIImpl.REMOTE_ACCESSED.invoker()
+                .onRemoteAccessed(targetWorld, player, pos, state, this, stack);
+        if (invokedResult != null && invokedResult.isError()) {
+            return invokedResult;
+        }
+        // If there were no invokers and the screen cannot be found, desync
+        NamedScreenHandlerFactory screen = invokedResult == null ? getScreen(targetWorld, pos, state) : null;
+        if (invokedResult == null && screen == null) {
+            return RemoteUseResult.DESYNC;
+        }
         if (!sessionActive) {
             RemoteUser.activateSession(player, session, ACCESS_TICKS);
         }
-        player.openHandledScreen(screen);
+        if (screen != null) {
+            player.openHandledScreen(screen);
+        }
+        // Effects and NBT
+        activate(nbt, player, world, targetWorld, sessionActive, interdimensional, differentSyncedId, pos, state);
+        return RemoteUseResult.SUCCESS;
+    }
+
+    public void activate(NbtCompound nbt, ServerPlayerEntity player, World world, ServerWorld targetWorld, boolean sessionActive, boolean interdimensional, boolean differentSyncedId, BlockPos pos, BlockState state) {
         // Players can remove an activated remote from their inventory, and this will stop inventoryTick calls,
         // but that's purely visual and the valuable ticking happens in the entity mixin.
         if (remoteType.unlimited() || !sessionActive) {

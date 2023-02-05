@@ -1,13 +1,19 @@
 package com.acikek.calibrated;
 
+import com.acikek.calibrated.api.CalibratedAccessAPI;
+import com.acikek.calibrated.api.event.RemoteUseResults;
 import com.acikek.calibrated.gamerule.CAGameRules;
 import com.acikek.calibrated.item.CAItems;
 import com.acikek.calibrated.item.remote.RemoteItem;
 import com.acikek.calibrated.sound.CASoundEvents;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.itemgroup.FabricItemGroupBuilder;
+import net.minecraft.block.Blocks;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.state.property.Properties;
 import net.minecraft.util.Identifier;
 
 public class CalibratedAccess implements ModInitializer {
@@ -24,6 +30,12 @@ public class CalibratedAccess implements ModInitializer {
 
     @Override
     public void onInitialize() {
+        CalibratedAccessAPI.registerListener(Blocks.LEVER, (world, player, pos, state, remote, remoteStack) -> {
+            world.setBlockState(pos, state.with(Properties.POWERED, !state.get(Properties.POWERED)));
+            world.playSound(null, player.getBlockPos(), SoundEvents.BLOCK_LEVER_CLICK, SoundCategory.BLOCKS, 0.3f, 1.0f);
+            return RemoteUseResults.success();
+        });
+
         CAItems.register();
         CASoundEvents.register();
         CAGameRules.register();
