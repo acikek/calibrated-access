@@ -30,12 +30,6 @@ public class CalibratedAccess implements ModInitializer {
 
     @Override
     public void onInitialize() {
-        CalibratedAccessAPI.registerListener(Blocks.LEVER, (world, player, pos, state, remote, remoteStack) -> {
-            world.setBlockState(pos, state.with(Properties.POWERED, !state.get(Properties.POWERED)));
-            world.playSound(null, player.getBlockPos(), SoundEvents.BLOCK_LEVER_CLICK, SoundCategory.BLOCKS, 0.3f, 1.0f);
-            return RemoteUseResults.success();
-        });
-
         CAItems.register();
         CASoundEvents.register();
         CAGameRules.register();
