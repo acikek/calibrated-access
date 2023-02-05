@@ -1,7 +1,7 @@
 package com.acikek.calibrated.item.remote;
 
 import com.acikek.calibrated.CalibratedAccess;
-import com.acikek.calibrated.gamerule.CAGamerules;
+import com.acikek.calibrated.gamerule.CAGameRules;
 import com.acikek.calibrated.sound.CASoundEvents;
 import com.acikek.calibrated.util.RemoteUser;
 import com.acikek.datacriteria.api.DataCriteriaAPI;
@@ -98,7 +98,7 @@ public class RemoteItem extends Item implements FabricItem {
         }
         UUID session = UUID.randomUUID();
         nbt.putUuid("Session", session);
-        remoteUser.addSession(session, pos, CAGamerules.getMaxSessions(world));
+        remoteUser.addSession(session, pos, CAGameRules.getMaxSessions(world));
         if (!remoteType.unlimited()) {
             nbt.putInt("Accesses", remoteType.accesses());
         }
@@ -144,9 +144,9 @@ public class RemoteItem extends Item implements FabricItem {
         }
         // Prevents accesses from invalid worlds
         ServerWorld serverWorld = (ServerWorld) world;
-        ServerWorld targetWorld = remoteType.interdimensional()
-                ? serverWorld
-                : serverWorld.getServer().getWorld(RegistryKey.of(Registry.WORLD_KEY, worldId));
+        ServerWorld targetWorld = interdimensional
+                ? serverWorld.getServer().getWorld(RegistryKey.of(Registry.WORLD_KEY, worldId))
+                : serverWorld;
         if (targetWorld == null) {
             return UseResult.INVALID_WORLD;
         }
