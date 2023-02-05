@@ -13,22 +13,27 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @Mixin(Entity.class)
 public class EntityMixin implements RemoteUser {
 
-    // TODO maybe possibly needs synchronization (the java feature)
+    // TODO only instantiate this when first access
     private final Map<UUID, SessionData> calibrated$sessions = new LinkedHashMap<>();
 
     @Override
     public void addSession(UUID session, SessionData data, int maxSessions) {
         calibrated$sessions.put(session, data);
         if (calibrated$sessions.size() > maxSessions) {
-            UUID removingSession = calibrated$sessions.entrySet().iterator().next().getKey();
-            calibrated$sessions.remove(removingSession);
+            var iter = calibrated$sessions.entrySet().iterator();
+            List<UUID> toRemove = new ArrayList<>();
+            for (int i = 0; i < calibrated$sessions.size() - maxSessions; i++) {
+                toRemove.add(iter.next().getKey());
+            }
+            for (UUID uuid : toRemove) {
+                System.out.println(uuid);
+                calibrated$sessions.remove(uuid);
+            }
         }
     }
 
@@ -106,7 +111,7 @@ public class EntityMixin implements RemoteUser {
         NbtList sessions = nbt.getList("calibrated$Sessions", NbtElement.COMPOUND_TYPE);
         for (int i = 0; i < sessions.size(); i++) {
             NbtCompound entry = sessions.getCompound(i);
-            calibrated$sessions.put(entry.getUuid("Session"), SessionData.fromNbt(nbt.getCompound("Data")));
+            calibrated$sessions.put(entry.getUuid("Session"), SessionData.fromNbt(entry.getCompound("Data")));
         }
     }
 }

@@ -1,6 +1,6 @@
 package com.acikek.calibrated;
 
-import com.acikek.calibrated.gamerule.CAGamerules;
+import com.acikek.calibrated.gamerule.CAGameRules;
 import com.acikek.calibrated.item.CAItems;
 import com.acikek.calibrated.item.remote.RemoteItem;
 import com.acikek.calibrated.sound.CASoundEvents;
@@ -26,7 +26,7 @@ public class CalibratedAccess implements ModInitializer {
     public void onInitialize() {
         CAItems.register();
         CASoundEvents.register();
-        CAGamerules.register();
+        CAGameRules.register();
         RemoteItem.registerStats();
     }
 }
