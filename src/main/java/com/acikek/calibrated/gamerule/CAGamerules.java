@@ -21,7 +21,7 @@ public class CAGamerules {
         MAX_SESSIONS = GameRuleRegistry.register(
                 "maxRemoteSessions",
                 GameRules.Category.MISC,
-                GameRuleFactory.createIntRule(1, (server, rule) ->
+                GameRuleFactory.createIntRule(1, 1, (server, rule) ->
                     CANetworking.s2cSetMaxSessions(server.getPlayerManager().getPlayerList(), rule.get())
                 )
         );
