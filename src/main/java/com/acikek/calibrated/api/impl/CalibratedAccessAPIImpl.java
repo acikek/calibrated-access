@@ -6,6 +6,7 @@ import com.acikek.calibrated.item.remote.RemoteUseResult;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
 import net.minecraft.block.Block;
+import net.minecraft.util.Identifier;
 
 import java.util.*;
 
@@ -29,12 +30,12 @@ public class CalibratedAccessAPIImpl {
                 return common.isEmpty() ? null : RemoteUseResults.success();
             });
 
-    public static void registerListener(Block block, RemoteAccessed listener) {
+    public static void registerListener(Block block, Identifier phase, RemoteAccessed listener) {
         if (blockListeners.containsKey(block)) {
             blockListeners.get(block).add(listener);
             return;
         }
         blockListeners.put(block, new ArrayList<>(List.of(listener)));
-        REMOTE_ACCESSED.register(listener);
+        REMOTE_ACCESSED.register(phase, listener);
     }
 }
