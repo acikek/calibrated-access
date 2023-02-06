@@ -18,6 +18,10 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUsageContext;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.Registry;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -28,8 +32,6 @@ import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.*;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.registry.Registry;
-import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
@@ -100,7 +102,7 @@ public class RemoteItem extends Item implements FabricItem {
     }
 
     public static void syncBlock(NbtCompound nbt, Block block) {
-        nbt.putString("SyncedId", Registry.BLOCK.getId(block).toString());
+        nbt.putString("SyncedId", Registries.BLOCK.getId(block).toString());
         Text text =  Text.translatable(block.getTranslationKey())
                 .formatted(block.asItem().getRarity(block.asItem().getDefaultStack()).formatting);
         nbt.putString("SyncedText", Text.Serializer.toJson(text));
@@ -145,7 +147,7 @@ public class RemoteItem extends Item implements FabricItem {
         // Prevents accesses from invalid worlds
         ServerWorld serverWorld = (ServerWorld) world;
         ServerWorld targetWorld = interdimensional
-                ? serverWorld.getServer().getWorld(RegistryKey.of(Registry.WORLD_KEY, worldId))
+                ? serverWorld.getServer().getWorld(RegistryKey.of(RegistryKeys.WORLD, worldId))
                 : serverWorld;
         if (targetWorld == null) {
             return RemoteUseResult.INVALID_WORLD;
@@ -154,7 +156,7 @@ public class RemoteItem extends Item implements FabricItem {
         BlockPos pos = BlockPos.fromLong(nbt.getLong("SyncedPos"));
         BlockState state = targetWorld.getBlockState(pos);
         Identifier syncedId = new Identifier(nbt.getString("SyncedId"));
-        boolean differentSyncedId = !Registry.BLOCK.getId(state.getBlock()).equals(syncedId);
+        boolean differentSyncedId = !Registries.BLOCK.getId(state.getBlock()).equals(syncedId);
         if (differentSyncedId && !world.getGameRules().getBoolean(CAGameRules.ALLOW_ID_MISMATCH)) {
             return RemoteUseResult.INVALID_ID;
         }
@@ -295,7 +297,7 @@ public class RemoteItem extends Item implements FabricItem {
     }
 
     public static void registerStat(Identifier id) {
-        Registry.register(Registry.CUSTOM_STAT, id, id);
+        Registry.register(Registries.CUSTOM_STAT, id, id);
         Stats.CUSTOM.getOrCreateStat(id);
     }
 

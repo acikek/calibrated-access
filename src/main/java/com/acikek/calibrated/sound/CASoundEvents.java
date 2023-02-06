@@ -1,8 +1,9 @@
 package com.acikek.calibrated.sound;
 
 import com.acikek.calibrated.CalibratedAccess;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.Registry;
 import net.minecraft.sound.SoundEvent;
-import net.minecraft.util.registry.Registry;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,14 +17,14 @@ public class CASoundEvents {
     public static final SoundEvent REMOTE_FAIL = create("item.remote_accessor.fail");
 
     public static SoundEvent create(String name) {
-        SoundEvent event = new SoundEvent(CalibratedAccess.id(name));
+        SoundEvent event = SoundEvent.of(CalibratedAccess.id(name));
         sounds.add(event);
         return event;
     }
 
     public static void register() {
         for (SoundEvent event : sounds) {
-            Registry.register(Registry.SOUND_EVENT, event.getId(), event);
+            Registry.register(Registries.SOUND_EVENT, event.getId(), event);
         }
     }
 }

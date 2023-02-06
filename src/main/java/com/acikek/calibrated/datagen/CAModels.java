@@ -4,6 +4,7 @@ import com.acikek.calibrated.CalibratedAccess;
 import com.acikek.calibrated.item.CAItems;
 import com.acikek.calibrated.item.remote.RemoteItem;
 import net.fabricmc.fabric.api.datagen.v1.FabricDataGenerator;
+import net.fabricmc.fabric.api.datagen.v1.FabricDataOutput;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricModelProvider;
 import net.minecraft.data.client.*;
 import net.minecraft.item.Item;
@@ -24,8 +25,8 @@ public class CAModels extends FabricModelProvider {
     public static final EffectModel ACTIVATED = getAccessorEffectModel("zap");
     public static final EffectModel FAIL = getAccessorEffectModel("fail");
 
-    public CAModels(FabricDataGenerator dataGenerator) {
-        super(dataGenerator);
+    public CAModels(FabricDataOutput output) {
+        super(output);
     }
 
     public static TextureMap getEffectMap(Item item, String effect) {
