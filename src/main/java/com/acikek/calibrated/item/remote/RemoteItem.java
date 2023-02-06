@@ -4,6 +4,7 @@ import com.acikek.calibrated.CalibratedAccess;
 import com.acikek.calibrated.api.impl.CalibratedAccessAPIImpl;
 import com.acikek.calibrated.gamerule.CAGameRules;
 import com.acikek.calibrated.sound.CASoundEvents;
+import com.acikek.calibrated.util.ClampedColor;
 import com.acikek.calibrated.util.RemoteUser;
 import com.acikek.datacriteria.api.DataCriteriaAPI;
 import com.acikek.datacriteria.api.Parameters;
@@ -42,6 +43,8 @@ public class RemoteItem extends Item implements FabricItem {
 
     public static final int ACCESS_TICKS = 15 * 20;
     public static final int STATUS_TICKS = 3 * 20;
+
+    public static final ClampedColor ITEM_BAR_COLOR = new ClampedColor(6743789);
 
     public RemoteType remoteType;
 
@@ -268,10 +271,11 @@ public class RemoteItem extends Item implements FabricItem {
         return (int) (((double) nbt.getInt("Accesses") / remoteType.accesses()) * 13.0);
     }
 
-    // TODO: pulse with sin when being used
     @Override
     public int getItemBarColor(ItemStack stack) {
-        return 6743789;
+        return stack.hasNbt() && stack.getOrCreateNbt().contains("VisualTicks")
+                ? ITEM_BAR_COLOR.getPulsed()
+                : ITEM_BAR_COLOR.colorValue;
     }
 
     @Override
