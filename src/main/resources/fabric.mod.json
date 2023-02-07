@@ -3,13 +3,14 @@
   "id": "calibrated",
   "version": "${version}",
   "name": "Calibrated Access",
-  "description": "A balanced solution for remote block interaction ",
+  "description": "A balanced solution for remote block interaction",
   "authors": [
     "acikek"
   ],
   "contact": {
     "website": "https://modrinth.com/mod/calibrated",
-    "repo": "https://github.com/acikek/calibrated-access"
+    "sources": "https://github.com/acikek/calibrated-access",
+    "issues": "https://github.com/acikek/calibrated-access/issues"
   },
   "license": "MIT",
   "icon": "assets/calibrated/icon.png",
