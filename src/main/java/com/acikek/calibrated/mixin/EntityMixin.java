@@ -95,9 +95,9 @@ public class EntityMixin implements RemoteUser {
             }
             // This is an important math method that can be used elsewhere, so make sure we're targeting the synced position
             BlockPos pos = data.syncedPos;
-            if (pos.getX() == (int) (x - 0.5)
-                    && pos.getY() == (int) (y - 0.5)
-                    && pos.getZ() == (int) (z - 0.5)) {
+            if (pos.getX() == (int) (Math.floor(x))
+                    && pos.getY() == (int) (Math.floor(y))
+                    && pos.getZ() == (int) (Math.floor(z))) {
                 cir.setReturnValue(0.0);
             }
         }
