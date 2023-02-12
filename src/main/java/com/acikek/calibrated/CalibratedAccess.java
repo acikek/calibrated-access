@@ -6,6 +6,7 @@ import com.acikek.calibrated.item.remote.RemoteItem;
 import com.acikek.calibrated.sound.CASoundEvents;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.Identifier;
@@ -26,8 +27,11 @@ public class CalibratedAccess implements ModInitializer {
             .icon(() -> new ItemStack(CAItems.NOVICE_ACCESSOR))
             .build();
 
+    public static boolean isPehkuiEnabled;
+
     @Override
     public void onInitialize() {
+        isPehkuiEnabled = FabricLoader.getInstance().isModLoaded("pehkui");
         LOGGER.info("Calibrating Access...");
         CAItems.register();
         CASoundEvents.register();
