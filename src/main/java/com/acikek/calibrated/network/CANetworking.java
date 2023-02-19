@@ -19,7 +19,7 @@ import java.util.UUID;
 public class CANetworking {
 
     public static final Identifier MODIFY_SESSION = CalibratedAccess.id("modify_session");
-    public static final Identifier SET_MAX_SESSIONS = CalibratedAccess.id("set_max_sessions");
+    public static final Identifier SET_GAMERULES = CalibratedAccess.id("set_gamerules");
 
     public static void s2cModifySession(ServerPlayerEntity to, UUID session, SessionData data, boolean remove) {
         PacketByteBuf buf = PacketByteBufs.create();
@@ -31,11 +31,12 @@ public class CANetworking {
         ServerPlayNetworking.send(to, MODIFY_SESSION, buf);
     }
 
-    public static void s2cSetMaxSessions(List<ServerPlayerEntity> to, int maxSessions) {
+    public static void s2cSetGameRules(List<ServerPlayerEntity> to, boolean allow, int maxSessions) {
         PacketByteBuf buf = PacketByteBufs.create();
+        buf.writeBoolean(allow);
         buf.writeInt(maxSessions);
         for (ServerPlayerEntity player : to) {
-            ServerPlayNetworking.send(player, SET_MAX_SESSIONS, buf);
+            ServerPlayNetworking.send(player, SET_GAMERULES, buf);
         }
     }
 
@@ -51,8 +52,9 @@ public class CANetworking {
                 remoteUser.setSessionData(session, SessionData.read(buf));
             }
         });
-        ClientPlayNetworking.registerGlobalReceiver(SET_MAX_SESSIONS, (client, handler, buf, responseSender) ->
-                CalibratedAccessClient.maxSessions = buf.readInt()
-        );
+        ClientPlayNetworking.registerGlobalReceiver(SET_GAMERULES, (client, handler, buf, responseSender) -> {
+            CalibratedAccessClient.allowAccess = buf.readBoolean();
+            CalibratedAccessClient.maxSessions = buf.readInt();
+        });
     }
 }

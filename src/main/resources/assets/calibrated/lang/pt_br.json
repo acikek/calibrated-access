@@ -23,6 +23,7 @@
   "tooltip.calibrated.synced_name": "Sincronizado a %s",
   "tooltip.calibrated.accesses": "Acessos: %s / %s",
   "tag.calibrated.remotes": "Acessadores remotos",
+  "gamerule.allowCalibratedAccess": "Deixar Acesso Calibrado",
   "gamerule.maxRemoteSessions": "Quantidade de Acessadores que podem ser sincronizados num momento",
   "gamerule.allowSyncedIdMismatch": "Deixar o bloco alvo de um Acessador ser diferente",
   "stat.calibrated.create_session": "Acessadores sincronizados",

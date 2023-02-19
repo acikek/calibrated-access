@@ -23,6 +23,7 @@
   "tooltip.calibrated.synced_name": "Sincronizado a %s",
   "tooltip.calibrated.accesses": "Accesos: %s / %s",
   "tag.calibrated.remotes": "Enlazadores remotos",
+  "gamerule.allowCalibratedAccess": "Dejar Acceso Calibrado",
   "gamerule.maxRemoteSessions": "Cantidad de Enlazadores que pueden ser sincronizados en un momento",
   "gamerule.allowSyncedIdMismatch": "Dejar el bloque objetivo de un Enlazador ser diferente",
   "stat.calibrated.create_session": "Enlazadores sincronizados",
