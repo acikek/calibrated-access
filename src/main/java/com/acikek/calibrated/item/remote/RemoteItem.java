@@ -28,6 +28,7 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.stat.Stats;
+import net.minecraft.tag.TagKey;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.*;
@@ -48,6 +49,8 @@ public class RemoteItem extends Item implements FabricItem {
 
     public static final ClampedColor ITEM_BAR_COLOR = new ClampedColor(6743789);
 
+    public static final TagKey<Block> OVERRIDES = TagKey.of(Registry.BLOCK_KEY, CalibratedAccess.id("overrides"));
+
     public RemoteType remoteType;
 
     public RemoteItem(Settings settings, RemoteType remoteType) {
@@ -55,7 +58,10 @@ public class RemoteItem extends Item implements FabricItem {
         this.remoteType = remoteType;
     }
 
-    public static NamedScreenHandlerFactory getScreen(World world, BlockPos pos, BlockState state) {
+    public static NamedScreenHandlerFactory validateStateAndGetScreen(World world, BlockPos pos, BlockState state) {
+        if (state.isIn(OVERRIDES) == CAGameRules.isAccessAllowed(world)) {
+            return null;
+        }
         if (world.getBlockEntity(pos) instanceof NamedScreenHandlerFactory screen) {
             return screen;
         }
@@ -71,7 +77,7 @@ public class RemoteItem extends Item implements FabricItem {
         BlockPos pos = context.getBlockPos();
         BlockState state = context.getWorld().getBlockState(pos);
         boolean hasListeners = CalibratedAccessAPIImpl.blockListeners.containsKey(state.getBlock());
-        if (hasListeners || getScreen(context.getWorld(), pos, state) != null) {
+        if (hasListeners || validateStateAndGetScreen(context.getWorld(), pos, state) != null) {
             NbtCompound nbt = context.getStack().getOrCreateNbt();
             calibrate(nbt, context.getPlayer(), context.getWorld(), pos, state);
             return ActionResult.SUCCESS;
@@ -170,7 +176,7 @@ public class RemoteItem extends Item implements FabricItem {
             return invokedResult;
         }
         // If there were no invokers and the screen cannot be found, desync
-        NamedScreenHandlerFactory screen = invokedResult == null ? getScreen(targetWorld, pos, state) : null;
+        NamedScreenHandlerFactory screen = invokedResult == null ? validateStateAndGetScreen(targetWorld, pos, state) : null;
         if (invokedResult == null && screen == null) {
             return RemoteUseResult.DESYNC;
         }

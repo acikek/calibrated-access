@@ -5,6 +5,7 @@ import net.fabricmc.api.ClientModInitializer;
 
 public class CalibratedAccessClient implements ClientModInitializer {
 
+    public static boolean allowAccess;
     public static int maxSessions;
 
     @Override
