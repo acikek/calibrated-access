@@ -22,13 +22,13 @@ import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.tag.TagKey;
 import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.stat.Stats;
-import net.minecraft.tag.TagKey;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.*;
@@ -49,7 +49,7 @@ public class RemoteItem extends Item implements FabricItem {
 
     public static final ClampedColor ITEM_BAR_COLOR = new ClampedColor(6743789);
 
-    public static final TagKey<Block> OVERRIDES = TagKey.of(Registry.BLOCK_KEY, CalibratedAccess.id("overrides"));
+    public static final TagKey<Block> OVERRIDES = TagKey.of(RegistryKeys.BLOCK, CalibratedAccess.id("overrides"));
 
     public RemoteType remoteType;
 
