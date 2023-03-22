@@ -1,7 +1,9 @@
 package com.acikek.calibrated.gamerule;
 
+import com.acikek.calibrated.CalibratedAccess;
 import com.acikek.calibrated.client.CalibratedAccessClient;
 import com.acikek.calibrated.network.CANetworking;
+import net.fabricmc.fabric.api.gamerule.v1.CustomGameRuleCategory;
 import net.fabricmc.fabric.api.gamerule.v1.GameRuleFactory;
 import net.fabricmc.fabric.api.gamerule.v1.GameRuleRegistry;
 import net.fabricmc.fabric.api.networking.v1.PacketSender;
@@ -9,12 +11,19 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayNetworkHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
 
 import java.util.List;
 
 public class CAGameRules implements ServerPlayConnectionEvents.Join {
+
+    public static CustomGameRuleCategory CATEGORY = new CustomGameRuleCategory(
+            CalibratedAccess.id("calibrated"),
+            Text.translatable("gamerule.category.calibrated").formatted(Formatting.BOLD, Formatting.AQUA)
+    );
 
     // Synced
     public static GameRules.Key<GameRules.BooleanRule> ALLOW_ACCESS;
@@ -51,18 +60,15 @@ public class CAGameRules implements ServerPlayConnectionEvents.Join {
 
     public static void register() {
         ALLOW_ACCESS = GameRuleRegistry.register(
-                "allowCalibratedAccess",
-                GameRules.Category.MISC,
+                "calibrated:allowCalibratedAccess", CATEGORY,
                 GameRuleFactory.createBooleanRule(true, (server, rule) -> send(server, null, rule.get(), null))
         );
         MAX_SESSIONS = GameRuleRegistry.register(
-                "maxRemoteSessions",
-                GameRules.Category.MISC,
+                "calibrated:maxRemoteSessions", CATEGORY,
                 GameRuleFactory.createIntRule(1, 1, (server, rule) -> send(server, null, null, rule.get()))
         );
         ALLOW_ID_MISMATCH = GameRuleRegistry.register(
-                "allowSyncedIdMismatch",
-                GameRules.Category.MISC,
+                "calibrated:allowSyncedIdMismatch", CATEGORY,
                 GameRuleFactory.createBooleanRule(true)
         );
         ServerPlayConnectionEvents.JOIN.register(new CAGameRules());
