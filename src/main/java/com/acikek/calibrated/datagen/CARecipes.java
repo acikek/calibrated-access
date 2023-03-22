@@ -9,7 +9,7 @@ import net.fabricmc.fabric.api.datagen.v1.provider.FabricRecipeProvider;
 import net.minecraft.data.server.recipe.RecipeJsonProvider;
 import net.minecraft.data.server.recipe.RecipeProvider;
 import net.minecraft.data.server.recipe.ShapedRecipeJsonBuilder;
-import net.minecraft.data.server.recipe.SmithingRecipeJsonBuilder;
+import net.minecraft.data.server.recipe.SmithingTransformRecipeJsonBuilder;
 import net.minecraft.item.Item;
 import net.minecraft.item.Items;
 import net.minecraft.recipe.Ingredient;
@@ -23,14 +23,17 @@ public class CARecipes extends FabricRecipeProvider {
         super(output);
     }
 
-    public static void generateSmithing(String name, Item upgradeFrom, Item upgradeMaterial, Item result, RecipeCategory category, Consumer<RecipeJsonProvider> exporter) {
-        SmithingRecipeJsonBuilder.create(Ingredient.ofItems(upgradeFrom), Ingredient.ofItems(upgradeMaterial), category, result)
+    public static void generateSmithing(String name, Item template, Item upgradeFrom, Item upgradeMaterial, Item result, RecipeCategory category, Consumer<RecipeJsonProvider> exporter) {
+        Ingredient templateMaterial = template != null
+                ? Ingredient.ofItems(template)
+                : Ingredient.EMPTY;
+        SmithingTransformRecipeJsonBuilder.create(templateMaterial, Ingredient.ofItems(upgradeFrom), Ingredient.ofItems(upgradeMaterial), category, result)
                 .criterion("has_upgrade", RecipeProvider.conditionsFromItem(upgradeMaterial))
                 .offerTo(exporter, CalibratedAccess.id(name));
     }
 
     public static void generateSmithing(Item item, RemoteType type, Consumer<RecipeJsonProvider> exporter) {
-        generateSmithing(type.name() + "_accessor", type.upgradeFrom().get(), type.upgradeMaterial(), item, RecipeCategory.TOOLS, exporter);
+        generateSmithing(type.name() + "_accessor", Items.NETHERITE_UPGRADE_SMITHING_TEMPLATE, type.upgradeFrom().get(), type.upgradeMaterial(), item, RecipeCategory.TOOLS, exporter);
     }
 
     public static void generateShaped(Item item, RemoteType type, Consumer<RecipeJsonProvider> exporter) {
@@ -55,7 +58,7 @@ public class CARecipes extends FabricRecipeProvider {
 
     @Override
     public void generate(Consumer<RecipeJsonProvider> exporter) {
-        generateSmithing("calibrator", Items.ENDER_PEARL, Items.REDSTONE, CAItems.CALIBRATOR, RecipeCategory.MISC, exporter);
+        generateSmithing("calibrator", null, Items.ENDER_PEARL, Items.REDSTONE, CAItems.CALIBRATOR, RecipeCategory.MISC, exporter);
         for (RemoteItem item : CAItems.remotes) {
             generate(item, exporter);
         }

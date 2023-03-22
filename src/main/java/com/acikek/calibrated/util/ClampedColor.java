@@ -1,5 +1,6 @@
 package com.acikek.calibrated.util;
 
+import net.minecraft.util.math.ColorHelper;
 import net.minecraft.util.math.MathHelper;
 
 public class ClampedColor {
@@ -23,7 +24,10 @@ public class ClampedColor {
     public int getPulsed() {
         float progress = (System.currentTimeMillis() % INTERVAL) / INTERVAL_F;
         int wave = (int) (MathHelper.sin(progress * MathHelper.TAU) * (float) THRESHOLD);
-        return MathHelper.packRgb(r.clamp(wave), g.clamp(wave), b.clamp(wave));
+        int result = r.clamp(wave);
+        result = (result << 8) + g.clamp(wave);
+        result = (result << 8) + b.clamp(wave);
+        return result;
     }
 
     public static class Value {

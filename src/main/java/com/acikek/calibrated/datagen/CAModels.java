@@ -3,7 +3,6 @@ package com.acikek.calibrated.datagen;
 import com.acikek.calibrated.CalibratedAccess;
 import com.acikek.calibrated.item.CAItems;
 import com.acikek.calibrated.item.remote.RemoteItem;
-import net.fabricmc.fabric.api.datagen.v1.FabricDataGenerator;
 import net.fabricmc.fabric.api.datagen.v1.FabricDataOutput;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricModelProvider;
 import net.minecraft.data.client.*;
