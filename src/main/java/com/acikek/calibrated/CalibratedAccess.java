@@ -5,7 +5,7 @@ import com.acikek.calibrated.item.CAItems;
 import com.acikek.calibrated.item.remote.RemoteItem;
 import com.acikek.calibrated.sound.CASoundEvents;
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
+import net.fabricmc.fabric.api.client.itemgroup.FabricItemGroupBuilder;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
@@ -23,7 +23,7 @@ public class CalibratedAccess implements ModInitializer {
         return new Identifier(ID, path);
     }
 
-    public static final ItemGroup ITEM_GROUP = FabricItemGroup.builder(id("main"))
+    public static final ItemGroup ITEM_GROUP = FabricItemGroupBuilder.create(id("main"))
             .icon(() -> new ItemStack(CAItems.NOVICE_ACCESSOR))
             .build();
 

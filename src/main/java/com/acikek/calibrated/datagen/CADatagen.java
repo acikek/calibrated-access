@@ -7,8 +7,7 @@ public class CADatagen implements DataGeneratorEntrypoint {
 
     @Override
     public void onInitializeDataGenerator(FabricDataGenerator fabricDataGenerator) {
-        var pack = fabricDataGenerator.createPack();
-        pack.addProvider((output, registriesFuture) -> new CAModels(output));
-        pack.addProvider((output, registriesFuture) -> new CARecipes(output));
+        fabricDataGenerator.addProvider(CAModels::new);
+        fabricDataGenerator.addProvider(generator -> new CARecipes(generator));
     }
 }

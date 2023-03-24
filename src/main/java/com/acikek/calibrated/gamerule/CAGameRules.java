@@ -11,7 +11,7 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayNetworkHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
@@ -22,7 +22,7 @@ public class CAGameRules implements ServerPlayConnectionEvents.Join {
 
     public static CustomGameRuleCategory CATEGORY = new CustomGameRuleCategory(
             CalibratedAccess.id("calibrated"),
-            Text.translatable("gamerule.category.calibrated").formatted(Formatting.BOLD, Formatting.AQUA)
+            new TranslatableText("gamerule.category.calibrated").formatted(Formatting.BOLD, Formatting.AQUA)
     );
 
     // Synced

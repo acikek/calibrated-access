@@ -18,21 +18,20 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUsageContext;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.Registry;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.registry.tag.TagKey;
 import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.stat.Stats;
+import net.minecraft.tag.TagKey;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.*;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.registry.Registry;
+import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
@@ -49,7 +48,7 @@ public class RemoteItem extends Item implements FabricItem {
 
     public static final ClampedColor ITEM_BAR_COLOR = new ClampedColor(6743789);
 
-    public static final TagKey<Block> OVERRIDES = TagKey.of(RegistryKeys.BLOCK, CalibratedAccess.id("overrides"));
+    public static final TagKey<Block> OVERRIDES = TagKey.of(Registry.BLOCK_KEY, CalibratedAccess.id("overrides"));
 
     public RemoteType remoteType;
 
@@ -108,8 +107,8 @@ public class RemoteItem extends Item implements FabricItem {
     }
 
     public static void syncBlock(NbtCompound nbt, Block block) {
-        nbt.putString("SyncedId", Registries.BLOCK.getId(block).toString());
-        Text text =  Text.translatable(block.getTranslationKey())
+        nbt.putString("SyncedId", Registry.BLOCK.getId(block).toString());
+        Text text = new TranslatableText(block.getTranslationKey())
                 .formatted(block.asItem().getRarity(block.asItem().getDefaultStack()).formatting);
         nbt.putString("SyncedText", Text.Serializer.toJson(text));
     }
@@ -153,7 +152,7 @@ public class RemoteItem extends Item implements FabricItem {
         // Prevents accesses from invalid worlds
         ServerWorld serverWorld = (ServerWorld) world;
         ServerWorld targetWorld = interdimensional
-                ? serverWorld.getServer().getWorld(RegistryKey.of(RegistryKeys.WORLD, worldId))
+                ? serverWorld.getServer().getWorld(RegistryKey.of(Registry.WORLD_KEY, worldId))
                 : serverWorld;
         if (targetWorld == null) {
             return RemoteUseResult.INVALID_WORLD;
@@ -162,7 +161,7 @@ public class RemoteItem extends Item implements FabricItem {
         BlockPos pos = BlockPos.fromLong(nbt.getLong("SyncedPos"));
         BlockState state = targetWorld.getBlockState(pos);
         Identifier syncedId = new Identifier(nbt.getString("SyncedId"));
-        boolean differentSyncedId = !Registries.BLOCK.getId(state.getBlock()).equals(syncedId);
+        boolean differentSyncedId = !Registry.BLOCK.getId(state.getBlock()).equals(syncedId);
         if (differentSyncedId && !world.getGameRules().getBoolean(CAGameRules.ALLOW_ID_MISMATCH)) {
             return RemoteUseResult.INVALID_ID;
         }
@@ -292,10 +291,10 @@ public class RemoteItem extends Item implements FabricItem {
             NbtCompound nbt = stack.getOrCreateNbt();
             if (nbt.contains("SyncedText")) {
                 Text text = Text.Serializer.fromJson(nbt.getString("SyncedText"));
-                tooltip.add(Text.translatable("tooltip.calibrated.synced_name", text).formatted(Formatting.GRAY));
+                tooltip.add(new TranslatableText("tooltip.calibrated.synced_name", text).formatted(Formatting.GRAY));
             }
             if (nbt.contains("Accesses")) {
-                MutableText accesses = Text.translatable("tooltip.calibrated.accesses", nbt.getInt("Accesses"), remoteType.accesses());
+                MutableText accesses = new TranslatableText("tooltip.calibrated.accesses", nbt.getInt("Accesses"), remoteType.accesses());
                 tooltip.add(accesses.formatted(Formatting.GRAY));
             }
         }
@@ -303,7 +302,7 @@ public class RemoteItem extends Item implements FabricItem {
     }
 
     public static void registerStat(Identifier id) {
-        Registry.register(Registries.CUSTOM_STAT, id, id);
+        Registry.register(Registry.CUSTOM_STAT, id, id);
         Stats.CUSTOM.getOrCreateStat(id);
     }
 

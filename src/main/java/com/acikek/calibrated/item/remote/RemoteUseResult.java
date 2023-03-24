@@ -2,6 +2,7 @@ package com.acikek.calibrated.item.remote;
 
 import com.acikek.calibrated.api.event.RemoteUseResults;
 import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
 
 public record RemoteUseResult(String errorKey, boolean isError, boolean eraseInfo)  {
@@ -14,6 +15,6 @@ public record RemoteUseResult(String errorKey, boolean isError, boolean eraseInf
     public static final RemoteUseResult DESYNC = RemoteUseResults.error("desync");
 
     public Text getErrorMessage() {
-        return Text.translatable("error.calibrated." + errorKey).formatted(Formatting.RED);
+        return new TranslatableText("error.calibrated." + errorKey).formatted(Formatting.RED);
     }
 }

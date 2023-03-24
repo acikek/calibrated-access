@@ -8,6 +8,7 @@
     "SlotMixin"
   ],
   "client": [
+    "ItemModelGeneratorAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

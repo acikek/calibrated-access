@@ -3,7 +3,8 @@ package com.acikek.calibrated.datagen;
 import com.acikek.calibrated.CalibratedAccess;
 import com.acikek.calibrated.item.CAItems;
 import com.acikek.calibrated.item.remote.RemoteItem;
-import net.fabricmc.fabric.api.datagen.v1.FabricDataOutput;
+import com.acikek.calibrated.mixin.ItemModelGeneratorAccessor;
+import net.fabricmc.fabric.api.datagen.v1.FabricDataGenerator;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricModelProvider;
 import net.minecraft.data.client.*;
 import net.minecraft.item.Item;
@@ -17,15 +18,18 @@ public class CAModels extends FabricModelProvider {
 
     public record EffectModel(String effect, Model model) {
         public void upload(Item item, ItemModelGenerator generator) {
-            model.upload(ModelIds.getItemSubModelId(item, "_" + effect), getEffectMap(item, effect), generator.writer);
+            model.upload(
+                    ModelIds.getItemSubModelId(item, "_" + effect), getEffectMap(item, effect),
+                    ((ItemModelGeneratorAccessor) generator).getWriter()
+            );
         }
     }
 
     public static final EffectModel ACTIVATED = getAccessorEffectModel("zap");
     public static final EffectModel FAIL = getAccessorEffectModel("fail");
 
-    public CAModels(FabricDataOutput output) {
-        super(output);
+    public CAModels(FabricDataGenerator generator) {
+        super(generator);
     }
 
     public static TextureMap getEffectMap(Item item, String effect) {
