@@ -9,17 +9,22 @@ import net.minecraft.block.Block;
 import net.minecraft.util.Identifier;
 
 import java.util.*;
+import java.util.function.Predicate;
 
 public class CalibratedAccessAPIImpl {
 
-    public static Map<Block, List<RemoteAccessed>> blockListeners = new HashMap<>();
+    private static final Map<Predicate<Block>, RemoteAccessed> BLOCK_LISTENERS = new HashMap<>();
+
+    private static List<RemoteAccessed> getListenersForBlock(Block block) {
+        return BLOCK_LISTENERS.entrySet().stream()
+                .filter(pair -> pair.getKey().test(block))
+                .map(Map.Entry::getValue)
+                .toList();
+    }
 
     public static final Event<RemoteAccessed> REMOTE_ACCESSED = EventFactory.createArrayBacked(RemoteAccessed.class,
             listeners -> (world, player, pos, state, remote, remoteStack) -> {
-                if (!blockListeners.containsKey(state.getBlock())) {
-                    return null;
-                }
-                List<RemoteAccessed> common = new ArrayList<>(blockListeners.get(state.getBlock()));
+                List<RemoteAccessed> common = new ArrayList<>(getListenersForBlock(state.getBlock()));
                 common.retainAll(Arrays.stream(listeners).toList());
                 for (RemoteAccessed listener : common) {
                     RemoteUseResult result = listener.onRemoteAccessed(world, player, pos, state, remote, remoteStack);
@@ -30,12 +35,17 @@ public class CalibratedAccessAPIImpl {
                 return common.isEmpty() ? null : RemoteUseResults.success();
             });
 
-    public static void registerListener(Block block, Identifier phase, RemoteAccessed listener) {
-        if (blockListeners.containsKey(block)) {
-            blockListeners.get(block).add(listener);
-            return;
-        }
-        blockListeners.put(block, new ArrayList<>(List.of(listener)));
+    public static void registerListener(Predicate<Block> predicate, Identifier phase, RemoteAccessed listener) {
+        BLOCK_LISTENERS.putIfAbsent(predicate, listener);
         REMOTE_ACCESSED.register(phase, listener);
+    }
+
+    public static boolean hasListener(Block block) {
+        for (var pair : BLOCK_LISTENERS.entrySet()) {
+            if (pair.getKey().test(block)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
