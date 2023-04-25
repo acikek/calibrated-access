@@ -12,6 +12,8 @@ import com.acikek.datacriteria.api.Parameters;
 import net.fabricmc.fabric.api.item.v1.FabricItem;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.LockableContainerBlockEntity;
 import net.minecraft.client.item.TooltipContext;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -59,11 +61,15 @@ public class RemoteItem extends Item implements FabricItem {
         this.remoteType = remoteType;
     }
 
-    public static NamedScreenHandlerFactory validateStateAndGetScreen(World world, BlockPos pos, BlockState state) {
+    public static NamedScreenHandlerFactory validateStateAndGetScreen(PlayerEntity player, World world, BlockPos pos, BlockState state) {
         if (state.isIn(OVERRIDES) == CAGameRules.isAccessAllowed(world)) {
             return null;
         }
-        if (world.getBlockEntity(pos) instanceof NamedScreenHandlerFactory screen) {
+        BlockEntity entity = world.getBlockEntity(pos);
+        if (entity instanceof LockableContainerBlockEntity lockable && !lockable.checkUnlocked(player)) {
+            return null;
+        }
+        if (entity instanceof NamedScreenHandlerFactory screen) {
             return screen;
         }
         return state.createScreenHandlerFactory(world, pos);
@@ -78,6 +84,7 @@ public class RemoteItem extends Item implements FabricItem {
         BlockPos pos = context.getBlockPos();
         BlockState state = context.getWorld().getBlockState(pos);
         boolean hasListeners = CalibratedAccessAPI.hasListener(state.getBlock());
+        if (hasListeners || validateStateAndGetScreen(context.getPlayer(), context.getWorld(), pos, state) != null) {
             NbtCompound nbt = context.getStack().getOrCreateNbt();
             calibrate(nbt, context.getPlayer(), context.getWorld(), pos, state);
             return ActionResult.SUCCESS;
@@ -176,7 +183,7 @@ public class RemoteItem extends Item implements FabricItem {
             return invokedResult;
         }
         // If there were no invokers and the screen cannot be found, desync
-        NamedScreenHandlerFactory screen = invokedResult == null ? validateStateAndGetScreen(targetWorld, pos, state) : null;
+        NamedScreenHandlerFactory screen = invokedResult == null ? validateStateAndGetScreen(player, targetWorld, pos, state) : null;
         if (invokedResult == null && screen == null) {
             return RemoteUseResult.DESYNC;
         }
