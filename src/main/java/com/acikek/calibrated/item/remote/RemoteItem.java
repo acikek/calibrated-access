@@ -61,38 +61,71 @@ public class RemoteItem extends Item implements FabricItem {
         this.remoteType = remoteType;
     }
 
-    public static NamedScreenHandlerFactory validateStateAndGetScreen(PlayerEntity player, World world, BlockPos pos, BlockState state) {
-        if (state.isIn(OVERRIDES) == CAGameRules.isAccessAllowed(world)) {
-            return null;
-        }
-        BlockEntity entity = world.getBlockEntity(pos);
-        if (entity instanceof LockableContainerBlockEntity lockable && !lockable.checkUnlocked(player)) {
-            return null;
-        }
-        if (entity instanceof NamedScreenHandlerFactory screen) {
-            return screen;
-        }
-        return state.createScreenHandlerFactory(world, pos);
-    }
-
     public static void triggerRemoteUsed(ServerPlayerEntity player, ServerWorld world, BlockPos targetPos, boolean interdimensional) {
         DataCriteriaAPI.trigger(CalibratedAccess.id("remote_used"), player, Parameters.block(world, targetPos), interdimensional);
     }
 
-    @Override
-    public ActionResult useOnBlock(ItemUsageContext context) {
-        BlockPos pos = context.getBlockPos();
-        BlockState state = context.getWorld().getBlockState(pos);
-        boolean hasListeners = CalibratedAccessAPI.hasListener(state.getBlock());
-        if (hasListeners || validateStateAndGetScreen(context.getPlayer(), context.getWorld(), pos, state) != null) {
-            NbtCompound nbt = context.getStack().getOrCreateNbt();
-            calibrate(nbt, context.getPlayer(), context.getWorld(), pos, state);
-            return ActionResult.SUCCESS;
+    public static Validation validateStateAndGetScreen(PlayerEntity player, World world, BlockPos pos, BlockState state) {
+        if (state.isIn(OVERRIDES) == CAGameRules.isAccessAllowed(world)) {
+            return new Validation(ValidationResult.FAIL, null);
         }
-        return super.useOnBlock(context);
+        BlockEntity entity = world.getBlockEntity(pos);
+        boolean serverExclusive = false;
+        if (entity instanceof LockableContainerBlockEntity lockable) {
+            // checkUnlocked only functions serverside
+            var result = world.isClient()
+                    ? ValidationResult.FAIL_CLIENT
+                    : !lockable.checkUnlocked(player)
+                            ? ValidationResult.FAIL
+                            : null;
+            if (result != null) {
+                return new Validation(result, null);
+            }
+            serverExclusive = true;
+        }
+        var screen = entity instanceof NamedScreenHandlerFactory screenHandlerFactory
+                ? screenHandlerFactory
+                : state.createScreenHandlerFactory(world, pos);
+        if (screen == null) {
+            return new Validation(ValidationResult.FAIL, null);
+        }
+        var result = serverExclusive ? ValidationResult.SUCCESS_SERVER : ValidationResult.SUCCESS;
+        return new Validation(result, screen);
     }
 
-    public void calibrate(NbtCompound nbt, PlayerEntity player, World world, BlockPos pos, BlockState state) {
+    public static Pair<ActionResult, Boolean> canUseOnBlock(PlayerEntity player, World world, BlockPos pos, BlockState state) {
+        if (CalibratedAccessAPI.hasListener(state.getBlock())) {
+            return new Pair<>(ActionResult.SUCCESS, false);
+        }
+        var validation = validateStateAndGetScreen(player, world, pos, state);
+        return switch (validation.result()) {
+            case FAIL, FAIL_CLIENT -> {
+                ActionResult result = validation.result() == ValidationResult.FAIL
+                        ? ActionResult.PASS
+                        : ActionResult.CONSUME; // FAIL_CLIENT
+                yield new Pair<>(result, false);
+            }
+            case SUCCESS, SUCCESS_SERVER ->
+                    new Pair<>(ActionResult.SUCCESS, validation.result() == ValidationResult.SUCCESS_SERVER);
+        };
+    }
+
+    @Override
+    public ActionResult useOnBlock(ItemUsageContext context) {
+        if (context.getPlayer() == null || !context.getPlayer().isSneaking()) {
+            return ActionResult.PASS;
+        }
+        BlockPos pos = context.getBlockPos();
+        BlockState state = context.getWorld().getBlockState(pos);
+        var result = canUseOnBlock(context.getPlayer(), context.getWorld(), pos, state);
+        if (result.getLeft() == ActionResult.SUCCESS) {
+            NbtCompound nbt = context.getStack().getOrCreateNbt();
+            calibrate(nbt, context.getPlayer(), context.getWorld(), pos, state, result.getRight());
+        }
+        return result.getLeft();
+    }
+
+    public void calibrate(NbtCompound nbt, PlayerEntity player, World world, BlockPos pos, BlockState state, boolean serverExclusive) {
         nbt.putLong("SyncedPos", pos.asLong());
         nbt.putString("SyncedWorld", world.getRegistryKey().getValue().toString());
         syncBlock(nbt, state.getBlock());
@@ -110,7 +143,7 @@ public class RemoteItem extends Item implements FabricItem {
         if (!remoteType.unlimited()) {
             nbt.putInt("Accesses", remoteType.accesses());
         }
-        if (world.isClient()) {
+        if (world.isClient() || serverExclusive) {
             playSound(CASoundEvents.REMOTE_SYNC, 0.85f + world.random.nextFloat() * 0.3f, player, world);
         }
         player.incrementStat(CREATE_SESSION);
@@ -185,7 +218,9 @@ public class RemoteItem extends Item implements FabricItem {
             return invokedResult;
         }
         // If there were no invokers and the screen cannot be found, desync
-        NamedScreenHandlerFactory screen = invokedResult == null ? validateStateAndGetScreen(player, targetWorld, pos, state) : null;
+        NamedScreenHandlerFactory screen = invokedResult == null
+                ? validateStateAndGetScreen(player, targetWorld, pos, state).screen()
+                : null;
         if (invokedResult == null && screen == null) {
             return RemoteUseResult.DESYNC;
         }
@@ -320,4 +355,13 @@ public class RemoteItem extends Item implements FabricItem {
         registerStat(ACCESS);
         registerStat(CREATE_SESSION);
     }
+
+    public enum ValidationResult {
+        FAIL,
+        FAIL_CLIENT,
+        SUCCESS,
+        SUCCESS_SERVER
+    }
+
+    public record Validation(ValidationResult result, NamedScreenHandlerFactory screen) {}
 }
