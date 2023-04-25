@@ -1,6 +1,7 @@
 package com.acikek.calibrated.item.remote;
 
 import com.acikek.calibrated.CalibratedAccess;
+import com.acikek.calibrated.api.CalibratedAccessAPI;
 import com.acikek.calibrated.api.impl.CalibratedAccessAPIImpl;
 import com.acikek.calibrated.gamerule.CAGameRules;
 import com.acikek.calibrated.sound.CASoundEvents;
@@ -74,8 +75,7 @@ public class RemoteItem extends Item implements FabricItem {
     public ActionResult useOnBlock(ItemUsageContext context) {
         BlockPos pos = context.getBlockPos();
         BlockState state = context.getWorld().getBlockState(pos);
-        boolean hasListeners = CalibratedAccessAPIImpl.blockListeners.containsKey(state.getBlock());
-        if (hasListeners || validateStateAndGetScreen(context.getWorld(), pos, state) != null) {
+        boolean hasListeners = CalibratedAccessAPI.hasListener(state.getBlock());
             NbtCompound nbt = context.getStack().getOrCreateNbt();
             calibrate(nbt, context.getPlayer(), context.getWorld(), pos, state);
             return ActionResult.SUCCESS;

@@ -1,18 +1,84 @@
 package com.acikek.calibrated.api;
 
 import com.acikek.calibrated.api.event.RemoteAccessed;
+import com.acikek.calibrated.api.event.RemoteUseResults;
 import com.acikek.calibrated.api.impl.CalibratedAccessAPIImpl;
 import net.fabricmc.fabric.api.event.Event;
 import net.minecraft.block.Block;
 import net.minecraft.util.Identifier;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.function.Predicate;
+
+/**
+ * <h1>Calibrated Access</h1>
+ *
+ * <h2>Overview</h2>
+ *
+ * <p>
+ * This is the main API class for <a href="https://github.com/acikek/calibrated-access">Calibrated Access</a>.
+ * It provides utility methods for registering and handling listeners of player using remote items to access blocks.
+ * </p>
+ * <br>
+ *
+ * <p>
+ * The public {@code event} API package contains:
+ * <ul>
+ *     <li>{@link RemoteAccessed} interface, which acts as a listener callback for the remote access event</li>
+ *     <li>{@link RemoteUseResults} utility class for passing success or fail states to the aforementioned event via a listener</li>
+ * </ul>
+ * </p>
+ *
+ * <h2>Example Usage</h2>
+ *
+ * <pre>
+ * {@code
+ * CalibratedAccessAPI.registerListener(Blocks.GOLD_BLOCK, (world, player, pos, state, remote, remoteStack) -> {
+ *      player.sendMessage(Text.literal("Ooh, shiny!"));
+ *      return RemoteUseResults.success();
+ * });
+ * }
+ * </pre>
+ */
 public class CalibratedAccessAPI {
 
     /**
-     * Registers a listener for a specific block being accessed.
+     * Registers a listener that only applies if the accessed block passes the specified predicate test.
+     * @param predicate the predicate to test the block against
+     */
+    public static void registerListener(Predicate<Block> predicate, Identifier phase, RemoteAccessed listener) {
+        CalibratedAccessAPIImpl.registerListener(predicate, phase, listener);
+    }
+
+    /**
+     * @see CalibratedAccessAPI#registerListener(Predicate, Identifier, RemoteAccessed)
+     */
+    public static void registerListener(Predicate<Block> predicate, RemoteAccessed listener) {
+        registerListener(predicate, Event.DEFAULT_PHASE, listener);
+    }
+
+    /**
+     * Registers a listener that applies to any of the specified blocks.
+     * @param blocks the collection of blocks to match against
+     */
+    public static void registerListener(Collection<Block> blocks, Identifier phase, RemoteAccessed listener) {
+        registerListener(blocks::contains, phase, listener);
+    }
+
+    /**
+     * @see CalibratedAccessAPI#registerListener(Collection, Identifier, RemoteAccessed)
+     */
+    public static void registerListener(Collection<Block> blocks, RemoteAccessed listener) {
+        registerListener(blocks, Event.DEFAULT_PHASE, listener);
+    }
+
+    /**
+     * Registers a listener that applies to one specific block being accessed.
+     * @param block the single block to test against
      */
     public static void registerListener(Block block, Identifier phase, RemoteAccessed listener) {
-        CalibratedAccessAPIImpl.registerListener(block, phase, listener);
+        registerListener(Collections.singletonList(block), phase, listener);
     }
 
     /**
@@ -20,5 +86,12 @@ public class CalibratedAccessAPI {
      */
     public static void registerListener(Block block, RemoteAccessed listener) {
         registerListener(block, Event.DEFAULT_PHASE, listener);
+    }
+
+    /**
+     * @return whether the specified block matches a registered {@link RemoteAccessed} listener
+     */
+    public static boolean hasListener(Block block) {
+        return CalibratedAccessAPIImpl.hasListener(block);
     }
 }
