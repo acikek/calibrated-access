@@ -110,7 +110,9 @@ public class RemoteItem extends Item implements FabricItem {
         if (!remoteType.unlimited()) {
             nbt.putInt("Accesses", remoteType.accesses());
         }
-        playSound(CASoundEvents.REMOTE_SYNC, 0.85f + world.random.nextFloat() * 0.3f, player, world);
+        if (world.isClient()) {
+            playSound(CASoundEvents.REMOTE_SYNC, 0.85f + world.random.nextFloat() * 0.3f, player, world);
+        }
         player.incrementStat(CREATE_SESSION);
     }
 
