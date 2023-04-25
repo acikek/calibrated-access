@@ -5,6 +5,7 @@ import com.acikek.calibrated.api.event.RemoteUseResults;
 import com.acikek.calibrated.api.impl.CalibratedAccessAPIImpl;
 import net.fabricmc.fabric.api.event.Event;
 import net.minecraft.block.Block;
+import net.minecraft.tag.TagKey;
 import net.minecraft.util.Identifier;
 
 import java.util.Collection;
@@ -56,6 +57,21 @@ public class CalibratedAccessAPI {
      */
     public static void registerListener(Predicate<Block> predicate, RemoteAccessed listener) {
         registerListener(predicate, Event.DEFAULT_PHASE, listener);
+    }
+
+    /**
+     * Registers a listener that applies when the accessed block is listed within a specified block tag.
+     * @param tag the block tag to match against
+     */
+    public static void registerListener(TagKey<Block> tag, Identifier phase, RemoteAccessed listener) {
+        registerListener(block -> block.getRegistryEntry().isIn(tag), phase, listener);
+    }
+
+    /**
+     * @see CalibratedAccessAPI#registerListener(TagKey, Identifier, RemoteAccessed)
+     */
+    public static void registerListener(TagKey<Block> tag, RemoteAccessed listener) {
+        registerListener(tag, Event.DEFAULT_PHASE, listener);
     }
 
     /**
