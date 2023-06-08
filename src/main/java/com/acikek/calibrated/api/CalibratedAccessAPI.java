@@ -5,7 +5,7 @@ import com.acikek.calibrated.api.event.RemoteUseResults;
 import com.acikek.calibrated.api.impl.CalibratedAccessAPIImpl;
 import net.fabricmc.fabric.api.event.Event;
 import net.minecraft.block.Block;
-import net.minecraft.tag.TagKey;
+import net.minecraft.registry.tag.TagKey;
 import net.minecraft.util.Identifier;
 
 import java.util.Collection;
