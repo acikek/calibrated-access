@@ -46,10 +46,6 @@ public class CAItems {
         register("skilled_accessor", SKILLED_ACCESSOR);
         register("expert_accessor", EXPERT_ACCESSOR);
         register("unlimited_accessor", UNLIMITED_ACCESSOR);
-        ItemGroupEvents.modifyEntriesEvent(CalibratedAccess.ITEM_GROUP).register(entries -> {
-            for (Item item : items) {
-                entries.add(item);
-            }
-        });
+        ItemGroupEvents.modifyEntriesEvent(CalibratedAccess.ITEM_GROUP_KEY).register(entries -> items.forEach(entries::add));
     }
 }

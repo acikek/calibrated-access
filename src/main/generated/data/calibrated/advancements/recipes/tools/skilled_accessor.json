@@ -15,7 +15,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "calibrated:expert_accessor"
+        "recipe": "calibrated:skilled_accessor"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -28,7 +28,8 @@
   ],
   "rewards": {
     "recipes": [
-      "calibrated:expert_accessor"
+      "calibrated:skilled_accessor"
     ]
-  }
+  },
+  "sends_telemetry_event": false
 }

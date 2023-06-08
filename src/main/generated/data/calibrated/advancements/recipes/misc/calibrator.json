@@ -30,5 +30,6 @@
     "recipes": [
       "calibrated:calibrator"
     ]
-  }
+  },
+  "sends_telemetry_event": false
 }

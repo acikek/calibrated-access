@@ -1,34 +1,35 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_calibrator": {
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "calibrated:unlimited_accessor"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    },
+    "has_upgrade": {
       "conditions": {
         "items": [
           {
             "items": [
-              "calibrated:calibrator"
+              "minecraft:netherite_ingot"
             ]
           }
         ]
       },
       "trigger": "minecraft:inventory_changed"
-    },
-    "has_the_recipe": {
-      "conditions": {
-        "recipe": "calibrated:skilled_accessor"
-      },
-      "trigger": "minecraft:recipe_unlocked"
     }
   },
   "requirements": [
     [
-      "has_calibrator",
+      "has_upgrade",
       "has_the_recipe"
     ]
   ],
   "rewards": {
     "recipes": [
-      "calibrated:skilled_accessor"
+      "calibrated:unlimited_accessor"
     ]
-  }
+  },
+  "sends_telemetry_event": false
 }

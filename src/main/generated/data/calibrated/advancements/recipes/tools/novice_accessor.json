@@ -30,5 +30,6 @@
     "recipes": [
       "calibrated:novice_accessor"
     ]
-  }
+  },
+  "sends_telemetry_event": false
 }

@@ -9,6 +9,11 @@ import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.Registry;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -23,8 +28,10 @@ public class CalibratedAccess implements ModInitializer {
         return new Identifier(ID, path);
     }
 
-    public static final ItemGroup ITEM_GROUP = FabricItemGroup.builder(id("main"))
+    public static final RegistryKey<ItemGroup> ITEM_GROUP_KEY = RegistryKey.of(RegistryKeys.ITEM_GROUP, id("main"));
+    public static final ItemGroup ITEM_GROUP = FabricItemGroup.builder()
             .icon(() -> new ItemStack(CAItems.NOVICE_ACCESSOR))
+            .displayName(Text.translatable("itemGroup.calibrated.main"))
             .build();
 
     public static boolean isPehkuiEnabled;
@@ -33,6 +40,7 @@ public class CalibratedAccess implements ModInitializer {
     public void onInitialize() {
         isPehkuiEnabled = FabricLoader.getInstance().isModLoaded("pehkui");
         LOGGER.info("Calibrating Access...");
+        Registry.register(Registries.ITEM_GROUP, id("main"), ITEM_GROUP);
         CAItems.register();
         CASoundEvents.register();
         CAGameRules.register();
