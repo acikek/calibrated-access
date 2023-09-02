@@ -8,35 +8,35 @@ import java.util.UUID;
 
 public interface RemoteUser {
 
-    void addSession(UUID session, SessionData data, int maxSessions);
+    void calibrated$addSession(UUID session, SessionData data, int maxSessions);
 
-    default void addSession(UUID session, BlockPos syncedPos, int maxSessions) {
-        addSession(session, new SessionData(syncedPos, false, 0), maxSessions);
+    default void calibrated$addSession(UUID session, BlockPos syncedPos, int maxSessions) {
+        calibrated$addSession(session, new SessionData(syncedPos, false, 0), maxSessions);
     }
 
-    void setSessionData(UUID session, SessionData data);
+    void calibrated$setSessionData(UUID session, SessionData data);
 
-    SessionData activateSession(UUID session, int ticks);
+    SessionData calibrated$activateSession(UUID session, int ticks);
 
-    void removeSession(UUID session);
+    void calibrated$removeSession(UUID session);
 
-    SessionData getSession(UUID session);
+    SessionData calibrated$getSession(UUID session);
 
-    default boolean hasSession(UUID session) {
-        return getSession(session) != null;
+    default boolean calibrated$hasSession(UUID session) {
+        return calibrated$getSession(session) != null;
     }
 
-    default boolean isSessionActive(UUID session) {
-        return getSession(session).active;
+    default boolean calibrated$isSessionActive(UUID session) {
+        return calibrated$getSession(session).active;
     }
 
     static void activateSession(ServerPlayerEntity player, UUID session, int ticks) {
-        SessionData data = ((RemoteUser) player).activateSession(session, ticks);
+        SessionData data = ((RemoteUser) player).calibrated$activateSession(session, ticks);
         CANetworking.s2cModifySession(player, session, data, false);
     }
 
     static void removeSession(ServerPlayerEntity player, UUID session) {
-        ((RemoteUser) player).removeSession(session);
+        ((RemoteUser) player).calibrated$removeSession(session);
         CANetworking.s2cModifySession(player, session, null, true);
     }
 }

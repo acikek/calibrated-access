@@ -135,11 +135,11 @@ public class RemoteItem extends Item implements FabricItem {
         RemoteUser remoteUser = (RemoteUser) player;
         // If the remote has an old session, attempt to remove that
         if (nbt.contains("Session")) {
-            remoteUser.removeSession(nbt.getUuid("Session"));
+            remoteUser.calibrated$removeSession(nbt.getUuid("Session"));
         }
         UUID session = UUID.randomUUID();
         nbt.putUuid("Session", session);
-        remoteUser.addSession(session, pos, CAGameRules.getMaxSessions(world));
+        remoteUser.calibrated$addSession(session, pos, CAGameRules.getMaxSessions(world));
         if (!remoteType.unlimited()) {
             nbt.putInt("Accesses", remoteType.accesses());
         }
@@ -182,7 +182,7 @@ public class RemoteItem extends Item implements FabricItem {
             return RemoteUseResult.CANNOT_ACCESS;
         }
         // Prevents a player from using a remote that isn't matched with the player
-        if (!remoteUser.hasSession(nbt.getUuid("Session"))) {
+        if (!remoteUser.calibrated$hasSession(nbt.getUuid("Session"))) {
             return RemoteUseResult.INVALID_SESSION;
         }
         // Prevents interdimensional accesses for remotes that do not have this ability
@@ -210,7 +210,7 @@ public class RemoteItem extends Item implements FabricItem {
         }
         // Most checks passed; now onto activation
         UUID session = nbt.getUuid("Session");
-        boolean sessionActive = remoteUser.isSessionActive(session);
+        boolean sessionActive = remoteUser.calibrated$isSessionActive(session);
         // Invoke remote accessed event for custom block behavior, if any
         RemoteUseResult invokedResult = CalibratedAccessAPIImpl.REMOTE_ACCESSED.invoker()
                 .onRemoteAccessed(targetWorld, player, pos, state, this, stack);

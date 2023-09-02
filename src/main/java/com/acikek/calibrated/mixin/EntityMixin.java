@@ -11,6 +11,7 @@ import net.minecraft.nbt.NbtList;
 import net.minecraft.util.math.BlockPos;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -25,8 +26,10 @@ public abstract class EntityMixin implements RemoteUser {
 
     @Shadow public abstract EntityPose getPose();
 
+    @Unique
     private Map<UUID, SessionData> calibrated$sessions = null;
 
+    @Unique
     private Map<UUID, SessionData> calibrated$getSessions() {
         if (calibrated$sessions == null) {
             calibrated$sessions = new LinkedHashMap<>();
@@ -35,7 +38,7 @@ public abstract class EntityMixin implements RemoteUser {
     }
 
     @Override
-    public void addSession(UUID session, SessionData data, int maxSessions) {
+    public void calibrated$addSession(UUID session, SessionData data, int maxSessions) {
         calibrated$getSessions().put(session, data);
         if (calibrated$sessions.size() > maxSessions) {
             var iter = calibrated$sessions.entrySet().iterator();
@@ -50,12 +53,12 @@ public abstract class EntityMixin implements RemoteUser {
     }
 
     @Override
-    public void setSessionData(UUID session, SessionData data) {
+    public void calibrated$setSessionData(UUID session, SessionData data) {
         calibrated$getSessions().put(session, data);
     }
 
     @Override
-    public SessionData activateSession(UUID session, int ticks) {
+    public SessionData calibrated$activateSession(UUID session, int ticks) {
         SessionData data = calibrated$getSessions().get(session);
         data.active = true;
         data.ticks = ticks;
@@ -63,12 +66,12 @@ public abstract class EntityMixin implements RemoteUser {
     }
 
     @Override
-    public void removeSession(UUID session) {
+    public void calibrated$removeSession(UUID session) {
         calibrated$getSessions().remove(session);
     }
 
     @Override
-    public SessionData getSession(UUID session) {
+    public SessionData calibrated$getSession(UUID session) {
         return calibrated$getSessions().get(session);
     }
 
@@ -102,6 +105,7 @@ public abstract class EntityMixin implements RemoteUser {
      * As these are two very different sets of values, a broad comparison covering both cases is not sufficient. This method
      * uses a manual compatibility implementation.
      */
+    @Unique
     private boolean calibrated$compare(int blockPosValue, double providedValue, double eyeOffset) {
         return CalibratedAccess.isPehkuiEnabled
                 ? Math.abs((blockPosValue + 0.5 - eyeOffset) - providedValue) <= 0.5

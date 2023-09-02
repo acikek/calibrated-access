@@ -46,10 +46,10 @@ public class CANetworking {
             RemoteUser remoteUser = ((RemoteUser) client.player);
             UUID session = buf.readUuid();
             if (buf.readBoolean()) {
-                remoteUser.removeSession(session);
+                remoteUser.calibrated$removeSession(session);
             }
             else {
-                remoteUser.setSessionData(session, SessionData.read(buf));
+                remoteUser.calibrated$setSessionData(session, SessionData.read(buf));
             }
         });
         ClientPlayNetworking.registerGlobalReceiver(SET_GAMERULES, (client, handler, buf, responseSender) -> {
