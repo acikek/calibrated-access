@@ -135,7 +135,7 @@ public class RemoteItem extends Item implements FabricItem {
         RemoteUser remoteUser = (RemoteUser) player;
         // If the remote has an old session, attempt to remove that
         if (nbt.contains("Session")) {
-            remoteUser.calibrated$removeSession(nbt.getUuid("Session"));
+            remoteUser.calibrated$getSessions().remove(nbt.getUuid("Session"));
         }
         UUID session = UUID.randomUUID();
         nbt.putUuid("Session", session);

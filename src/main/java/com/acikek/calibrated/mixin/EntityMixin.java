@@ -29,8 +29,13 @@ public abstract class EntityMixin implements RemoteUser {
     @Unique
     private Map<UUID, SessionData> calibrated$sessions = null;
 
-    @Unique
-    private Map<UUID, SessionData> calibrated$getSessions() {
+    @Override
+    public boolean calibrated$hasSessions() {
+        return calibrated$sessions != null && !calibrated$sessions.isEmpty();
+    }
+
+    @Override
+    public Map<UUID, SessionData> calibrated$getSessions() {
         if (calibrated$sessions == null) {
             calibrated$sessions = new LinkedHashMap<>();
         }
@@ -53,26 +58,11 @@ public abstract class EntityMixin implements RemoteUser {
     }
 
     @Override
-    public void calibrated$setSessionData(UUID session, SessionData data) {
-        calibrated$getSessions().put(session, data);
-    }
-
-    @Override
     public SessionData calibrated$activateSession(UUID session, int ticks) {
         SessionData data = calibrated$getSessions().get(session);
         data.active = true;
         data.ticks = ticks;
         return data;
-    }
-
-    @Override
-    public void calibrated$removeSession(UUID session) {
-        calibrated$getSessions().remove(session);
-    }
-
-    @Override
-    public SessionData calibrated$getSession(UUID session) {
-        return calibrated$getSessions().get(session);
     }
 
     @Inject(method = "tick", at = @At("TAIL"))
@@ -116,7 +106,7 @@ public abstract class EntityMixin implements RemoteUser {
     // Automatic validation - if this call doesn't go through on the server, no slot/GUI actions will be submitted
     @Inject(method = "squaredDistanceTo(DDD)D", cancellable = true, at = @At("HEAD"))
     private void calibrated$fakeDistance(double x, double y, double z, CallbackInfoReturnable<Double> cir) {
-        if (calibrated$sessions == null) {
+        if (!calibrated$hasSessions()) {
             return;
         }
         for (SessionData data : calibrated$sessions.values()) {
@@ -138,7 +128,7 @@ public abstract class EntityMixin implements RemoteUser {
 
     @Inject(method = "writeNbt", at = @At("TAIL"))
     private void calibrated$writeNbt(NbtCompound nbt, CallbackInfoReturnable<NbtCompound> cir) {
-        if (calibrated$sessions == null || calibrated$sessions.isEmpty()) {
+        if (!calibrated$hasSessions()) {
             return;
         }
         NbtList sessionEntries = new NbtList();
