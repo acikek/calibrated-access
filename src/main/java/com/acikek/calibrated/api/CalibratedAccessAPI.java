@@ -3,13 +3,19 @@ package com.acikek.calibrated.api;
 import com.acikek.calibrated.api.event.RemoteAccessed;
 import com.acikek.calibrated.api.event.RemoteUseResults;
 import com.acikek.calibrated.api.impl.CalibratedAccessAPIImpl;
+import com.acikek.calibrated.api.session.SessionView;
 import net.fabricmc.fabric.api.event.Event;
 import net.minecraft.block.Block;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.util.Identifier;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
+import java.util.UUID;
 import java.util.function.Predicate;
 
 /**
@@ -109,5 +115,32 @@ public class CalibratedAccessAPI {
      */
     public static boolean hasListener(Block block) {
         return CalibratedAccessAPIImpl.hasListener(block);
+    }
+
+    /**
+     * @return an <b>immutable</b> map of a player's session IDs to their {@link SessionView}s.
+     * If the player has no sessions loaded, returns an empty map.
+     */
+    public static @NotNull Map<UUID, SessionView> getSessions(PlayerEntity player) {
+        return CalibratedAccessAPIImpl.getSessions(player);
+    }
+
+    /**
+     * @return whether a player has the specified session loaded.
+     * @see CalibratedAccessAPI#getSession(PlayerEntity, UUID)
+     * @see CalibratedAccessAPI#getSessions(PlayerEntity)
+     */
+    public static boolean hasSession(PlayerEntity player, UUID session) {
+        return getSessions(player).containsKey(session);
+    }
+
+    /**
+     * @return an immutable view of a player's specified session data.
+     * If the player doesn't have this session loaded, returns {@code null}.
+     * @see CalibratedAccessAPI#hasSession(PlayerEntity, UUID)
+     * @see CalibratedAccessAPI#getSessions(PlayerEntity)
+     */
+    public static @Nullable SessionView getSession(PlayerEntity player, UUID session) {
+        return getSessions(player).get(session);
     }
 }

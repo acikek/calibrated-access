@@ -2,14 +2,24 @@ package com.acikek.calibrated.api.impl;
 
 import com.acikek.calibrated.api.event.RemoteAccessed;
 import com.acikek.calibrated.api.event.RemoteUseResults;
+import com.acikek.calibrated.api.session.SessionView;
 import com.acikek.calibrated.item.remote.RemoteUseResult;
+import com.acikek.calibrated.util.RemoteUser;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
 import net.minecraft.block.Block;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.Identifier;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 public class CalibratedAccessAPIImpl {
 
@@ -47,5 +57,13 @@ public class CalibratedAccessAPIImpl {
             }
         }
         return false;
+    }
+
+    public static Map<UUID, SessionView> getSessions(PlayerEntity player) {
+        var user = ((RemoteUser) player);
+        if (!user.calibrated$hasSessions()) {
+            return Collections.emptyMap();
+        }
+        return Collections.unmodifiableMap(user.calibrated$getSessions());
     }
 }

@@ -3,6 +3,7 @@ package com.acikek.calibrated.item.remote;
 import com.acikek.calibrated.CalibratedAccess;
 import com.acikek.calibrated.api.CalibratedAccessAPI;
 import com.acikek.calibrated.api.impl.CalibratedAccessAPIImpl;
+import com.acikek.calibrated.api.session.SessionView;
 import com.acikek.calibrated.gamerule.CAGameRules;
 import com.acikek.calibrated.sound.CASoundEvents;
 import com.acikek.calibrated.util.ClampedColor;
@@ -34,7 +35,12 @@ import net.minecraft.sound.SoundEvent;
 import net.minecraft.stat.Stats;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
-import net.minecraft.util.*;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Formatting;
+import net.minecraft.util.Hand;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.Pair;
+import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
@@ -177,12 +183,13 @@ public class RemoteItem extends Item implements FabricItem {
     }
 
     public RemoteUseResult use(ItemStack stack, NbtCompound nbt, World world, ServerPlayerEntity player) {
-        RemoteUser remoteUser = (RemoteUser) player;
         if (!canTryAccess(nbt)) {
             return RemoteUseResult.CANNOT_ACCESS;
         }
         // Prevents a player from using a remote that isn't matched with the player
-        if (!remoteUser.calibrated$hasSession(nbt.getUuid("Session"))) {
+        UUID session = nbt.getUuid("Session");
+        SessionView sessionData = CalibratedAccessAPI.getSession(player, session);
+        if (sessionData == null) {
             return RemoteUseResult.INVALID_SESSION;
         }
         // Prevents interdimensional accesses for remotes that do not have this ability
@@ -209,8 +216,6 @@ public class RemoteItem extends Item implements FabricItem {
             return RemoteUseResult.INVALID_ID;
         }
         // Most checks passed; now onto activation
-        UUID session = nbt.getUuid("Session");
-        boolean sessionActive = remoteUser.calibrated$isSessionActive(session);
         // Invoke remote accessed event for custom block behavior, if any
         RemoteUseResult invokedResult = CalibratedAccessAPIImpl.REMOTE_ACCESSED.invoker()
                 .onRemoteAccessed(targetWorld, player, pos, state, this, stack);
@@ -224,14 +229,15 @@ public class RemoteItem extends Item implements FabricItem {
         if (invokedResult == null && screen == null) {
             return RemoteUseResult.DESYNC;
         }
-        if (!sessionActive) {
+        boolean wasActive = sessionData.isActive();
+        if (!wasActive) {
             RemoteUser.activateSession(player, session, ACCESS_TICKS);
         }
         if (screen != null) {
             player.openHandledScreen(screen);
         }
         // Effects and NBT
-        activate(nbt, player, world, targetWorld, sessionActive, interdimensional, differentSyncedId, pos, state);
+        activate(nbt, player, world, targetWorld, wasActive, interdimensional, differentSyncedId, pos, state);
         return RemoteUseResult.SUCCESS;
     }
 

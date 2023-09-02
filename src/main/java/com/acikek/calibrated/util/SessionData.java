@@ -1,10 +1,11 @@
 package com.acikek.calibrated.util;
 
+import com.acikek.calibrated.api.session.SessionView;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.util.math.BlockPos;
 
-public class SessionData {
+public class SessionData implements SessionView {
 
     public BlockPos syncedPos;
     public boolean active;
@@ -44,5 +45,29 @@ public class SessionData {
                 buf.readBoolean(),
                 buf.readInt()
         );
+    }
+
+    @Override
+    public BlockPos syncedPos() {
+        return syncedPos;
+    }
+
+    @Override
+    public boolean isActive() {
+        return active;
+    }
+
+    @Override
+    public int remainingTicks() {
+        return ticks;
+    }
+
+    @Override
+    public String toString() {
+        return "SessionData{" +
+                "syncedPos=" + syncedPos +
+                ", active=" + active +
+                ", ticks=" + ticks +
+                '}';
     }
 }
