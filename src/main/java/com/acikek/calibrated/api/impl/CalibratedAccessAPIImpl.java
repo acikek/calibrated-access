@@ -42,7 +42,7 @@ public class CalibratedAccessAPIImpl {
                         return result;
                     }
                 }
-                return common.isEmpty() ? null : RemoteUseResults.success();
+                return common.isEmpty() ? null : RemoteUseResults.SUCCESS;
             });
 
     public static void registerListener(Predicate<Block> predicate, Identifier phase, RemoteAccessed listener) {

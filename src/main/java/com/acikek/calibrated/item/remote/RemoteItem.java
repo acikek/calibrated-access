@@ -3,6 +3,7 @@ package com.acikek.calibrated.item.remote;
 import com.acikek.blockreach.api.BlockReachAPI;
 import com.acikek.calibrated.CalibratedAccess;
 import com.acikek.calibrated.api.CalibratedAccessAPI;
+import com.acikek.calibrated.api.event.RemoteUseResults;
 import com.acikek.calibrated.api.impl.CalibratedAccessAPIImpl;
 import com.acikek.calibrated.api.session.SessionView;
 import com.acikek.calibrated.gamerule.CAGameRules;
@@ -99,7 +100,7 @@ public class RemoteItem extends Item implements FabricItem {
             calibrate(nbt, context.getPlayer(), context.getWorld(), pos, state);
         }
         else if (context.getPlayer() instanceof ServerPlayerEntity serverPlayer) {
-            fail(context.getStack().getOrCreateNbt(), true, serverPlayer, context.getWorld(), RemoteUseResult.CANNOT_SYNC);
+            fail(context.getStack().getOrCreateNbt(), true, serverPlayer, context.getWorld(), RemoteUseResults.CANNOT_SYNC);
         }
         return result;
     }
@@ -159,20 +160,20 @@ public class RemoteItem extends Item implements FabricItem {
 
     public RemoteUseResult use(ItemStack stack, NbtCompound nbt, World world, ServerPlayerEntity player) {
         if (!canTryAccess(nbt)) {
-            return RemoteUseResult.CANNOT_ACCESS;
+            return RemoteUseResults.CANNOT_ACCESS;
         }
         // Prevents a player from using a remote that isn't matched with the player
         UUID session = nbt.getUuid("Session");
         SessionView sessionData = CalibratedAccessAPI.getSession(player, session);
         if (sessionData == null) {
-            return RemoteUseResult.INVALID_SESSION;
+            return RemoteUseResults.INVALID_SESSION;
         }
         // Prevents interdimensional accesses for remotes that do not have this ability
         // This is not considered irreversible as the player can move back to the proper dimension
         Identifier worldId = new Identifier(nbt.getString("SyncedWorld"));
         boolean interdimensional = !world.getRegistryKey().getValue().equals(worldId);
         if (interdimensional && !remoteType.interdimensional()) {
-            return RemoteUseResult.INVALID_WORLD;
+            return RemoteUseResults.INVALID_WORLD;
         }
         // Prevents accesses from invalid worlds
         ServerWorld serverWorld = (ServerWorld) world;
@@ -180,7 +181,7 @@ public class RemoteItem extends Item implements FabricItem {
                 ? serverWorld.getServer().getWorld(RegistryKey.of(RegistryKeys.WORLD, worldId))
                 : serverWorld;
         if (targetWorld == null) {
-            return RemoteUseResult.INVALID_WORLD;
+            return RemoteUseResults.INVALID_WORLD;
         }
         // Prevents accesses to target blocks with different IDs if the gamerule disallows it
         BlockPos pos = BlockPos.fromLong(nbt.getLong("SyncedPos"));
@@ -188,7 +189,7 @@ public class RemoteItem extends Item implements FabricItem {
         Identifier syncedId = new Identifier(nbt.getString("SyncedId"));
         boolean differentSyncedId = !Registries.BLOCK.getId(state.getBlock()).equals(syncedId);
         if (differentSyncedId && !world.getGameRules().getBoolean(CAGameRules.ALLOW_ID_MISMATCH)) {
-            return RemoteUseResult.INVALID_ID;
+            return RemoteUseResults.INVALID_ID;
         }
         // Most checks passed; now onto activation
         // Invoke remote accessed event for custom block behavior, if any
@@ -202,7 +203,7 @@ public class RemoteItem extends Item implements FabricItem {
                 ? validateStateAndGetScreen(player, targetWorld, pos, state)
                 : null;
         if (invokedResult == null && screen == null) {
-            return RemoteUseResult.DESYNC;
+            return RemoteUseResults.DESYNC;
         }
         boolean wasActive = sessionData.isActive();
         if (!wasActive) {
@@ -213,7 +214,7 @@ public class RemoteItem extends Item implements FabricItem {
         }
         // Effects and NBT
         activate(nbt, player, world, targetWorld, wasActive, interdimensional, differentSyncedId, pos, state);
-        return RemoteUseResult.SUCCESS;
+        return RemoteUseResults.SUCCESS;
     }
 
     public void activate(NbtCompound nbt, ServerPlayerEntity player, World world, ServerWorld targetWorld, boolean sessionActive, boolean interdimensional, boolean differentSyncedId, BlockPos pos, BlockState state) {
