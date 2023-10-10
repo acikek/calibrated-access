@@ -3,28 +3,29 @@ package com.acikek.calibrated.mixin;
 import com.acikek.calibrated.CalibratedAccess;
 import com.acikek.calibrated.util.RemoteUser;
 import com.acikek.calibrated.util.SessionData;
+import com.mojang.datafixers.util.Pair;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityPose;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtList;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.util.Util;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @Mixin(Entity.class)
 public abstract class EntityMixin implements RemoteUser {
 
-    @Shadow public abstract float getEyeHeight(EntityPose pose);
-
-    @Shadow public abstract EntityPose getPose();
+    @Unique
+    private static final String NBT_KEY = "calibrated$sessions";
 
     @Unique
     private Map<UUID, SessionData> calibrated$sessions = null;
@@ -43,8 +44,9 @@ public abstract class EntityMixin implements RemoteUser {
     }
 
     @Override
-    public void calibrated$addSession(UUID session, SessionData data, int maxSessions) {
+    public List<SessionData> calibrated$addSession(UUID session, SessionData data, int maxSessions) {
         calibrated$getSessions().put(session, data);
+        List<SessionData> removed = new ArrayList<>();
         if (calibrated$sessions.size() > maxSessions) {
             var iter = calibrated$sessions.entrySet().iterator();
             List<UUID> toRemove = new ArrayList<>();
@@ -52,9 +54,11 @@ public abstract class EntityMixin implements RemoteUser {
                 toRemove.add(iter.next().getKey());
             }
             for (UUID uuid : toRemove) {
-                calibrated$sessions.remove(uuid);
+                var removedData = calibrated$sessions.remove(uuid);
+                removed.add(removedData);
             }
         }
+        return removed;
     }
 
     @Override
@@ -81,75 +85,29 @@ public abstract class EntityMixin implements RemoteUser {
         }
     }
 
-    /**
-     * Compares a calibrated block position value with a coordinate value passed in by {@link Entity#squaredDistanceTo(double, double, double)}.
-     * <p>
-     * When validating screen interactions, Vanilla increments each block coordinate by {@code 0.5}, resulting in the block's center.
-     * An earlier version of this check was to remove the {@code 0.5} offsets and compare them against the ints of the block position.
-     * <p>
-     * With <a href="https://modrinth.com/mod/pehkui">Pehkui</a>, however, that method fails; Pehkui in particular fine-tunes the {@code squaredDistanceTo} values
-     * so that reach calculations are more precise at smaller scales. Flooring the passed in values and checking against those
-     * also fails as the values can sometimes 'bleed into' the next block coordinate, such as {@code 5} becoming {@code 6.0},
-     * of course with a floored value of {@code 6.0} instead of {@code 5.0}. It also takes eye level into account for the Y value.
-     * <p>
-     * As these are two very different sets of values, a broad comparison covering both cases is not sufficient. This method
-     * uses a manual compatibility implementation.
-     */
-    @Unique
-    private boolean calibrated$compare(int blockPosValue, double providedValue, double eyeOffset) {
-        return CalibratedAccess.isPehkuiEnabled
-                ? Math.abs((blockPosValue + 0.5 - eyeOffset) - providedValue) <= 0.5
-                : blockPosValue == (int) (Math.floor(providedValue));
-    }
-
-    // Screen handlers call this method in some way, just not consistently.
-    // Automatic validation - if this call doesn't go through on the server, no slot/GUI actions will be submitted
-    @Inject(method = "squaredDistanceTo(DDD)D", cancellable = true, at = @At("HEAD"))
-    private void calibrated$fakeDistance(double x, double y, double z, CallbackInfoReturnable<Double> cir) {
-        if (!calibrated$hasSessions()) {
-            return;
-        }
-        for (SessionData data : calibrated$sessions.values()) {
-            // Inactive sessions do not need to be counted in this search
-            if (!data.active) {
-                continue;
-            }
-            // This is an important math method that can be used elsewhere, so make sure we're targeting the synced position
-            BlockPos pos = data.syncedPos;
-            // Only calculate eye offset if Pehkui is enabled for the relevant check with it
-            double eyeOffset = CalibratedAccess.isPehkuiEnabled ? getEyeHeight(getPose()) : 0.0;
-            if (calibrated$compare(pos.getX(), x, 0.0)
-                    && calibrated$compare(pos.getY(), y, eyeOffset)
-                    && calibrated$compare(pos.getZ(), z, 0.0)) {
-                cir.setReturnValue(0.0);
-            }
-        }
-    }
-
     @Inject(method = "writeNbt", at = @At("TAIL"))
     private void calibrated$writeNbt(NbtCompound nbt, CallbackInfoReturnable<NbtCompound> cir) {
         if (!calibrated$hasSessions()) {
             return;
         }
-        NbtList sessionEntries = new NbtList();
-        for (Map.Entry<UUID, SessionData> entry : calibrated$sessions.entrySet()) {
-            NbtCompound cpd = new NbtCompound();
-            cpd.putUuid("Session", entry.getKey());
-            cpd.put("Data", entry.getValue().toNbt());
-            sessionEntries.add(cpd);
-        }
-        nbt.put("calibrated$Sessions", sessionEntries);
+        var sessions = calibrated$sessions.entrySet().stream()
+                .map(entry -> Pair.of(entry.getKey(), entry.getValue()))
+                .toList();
+        var encoded = SessionData.LIST_CODEC.encodeStart(NbtOps.INSTANCE, sessions)
+                .getOrThrow(true, Util.addPrefix("Failed to serialize sessions: ", CalibratedAccess.LOGGER::error));
+        nbt.put(NBT_KEY, encoded);
     }
 
     @Inject(method = "readNbt", at = @At("TAIL"))
     private void calibrated$readNbt(NbtCompound nbt, CallbackInfo ci) {
-        if (!nbt.contains("calibrated$Sessions")) {
+        if (!nbt.contains(NBT_KEY)) {
             return;
         }
-        NbtList sessions = nbt.getList("calibrated$Sessions", NbtElement.COMPOUND_TYPE);
-        for (int i = 0; i < sessions.size(); i++) {
-            NbtCompound entry = sessions.getCompound(i);
-            calibrated$getSessions().put(entry.getUuid("Session"), SessionData.fromNbt(entry.getCompound("Data")));
+        var sessions = SessionData.LIST_CODEC.decode(NbtOps.INSTANCE, nbt.getCompound(NBT_KEY))
+                .getOrThrow(true, Util.addPrefix("Failed to deserialize sessions: ", CalibratedAccess.LOGGER::error))
+                .getFirst();
+        for (var session : sessions) {
+            calibrated$getSessions().put(session.getFirst(), session.getSecond());
         }
     }
 }

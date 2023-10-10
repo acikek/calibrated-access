@@ -3,7 +3,9 @@ package com.acikek.calibrated.util;
 import com.acikek.calibrated.network.CANetworking;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -13,10 +15,10 @@ public interface RemoteUser {
 
     Map<UUID, SessionData> calibrated$getSessions();
 
-    void calibrated$addSession(UUID session, SessionData data, int maxSessions);
+    List<SessionData> calibrated$addSession(UUID session, SessionData data, int maxSessions);
 
-    default void calibrated$addSession(UUID session, BlockPos syncedPos, int maxSessions) {
-        calibrated$addSession(session, new SessionData(syncedPos, false, 0), maxSessions);
+    default List<SessionData> calibrated$addSession(UUID session, BlockPos syncedPos, World world, int maxSessions) {
+        return calibrated$addSession(session, new SessionData(syncedPos, world.getRegistryKey(), false, 0), maxSessions);
     }
 
     SessionData calibrated$activateSession(UUID session, int ticks);

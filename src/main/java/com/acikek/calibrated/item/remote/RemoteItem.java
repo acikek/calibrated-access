@@ -1,5 +1,6 @@
 package com.acikek.calibrated.item.remote;
 
+import com.acikek.blockreach.api.BlockReachAPI;
 import com.acikek.calibrated.CalibratedAccess;
 import com.acikek.calibrated.api.CalibratedAccessAPI;
 import com.acikek.calibrated.api.impl.CalibratedAccessAPIImpl;
@@ -13,8 +14,6 @@ import com.acikek.datacriteria.api.Parameters;
 import net.fabricmc.fabric.api.item.v1.FabricItem;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.entity.LockableContainerBlockEntity;
 import net.minecraft.client.item.TooltipContext;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -39,7 +38,6 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.Pair;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -71,49 +69,21 @@ public class RemoteItem extends Item implements FabricItem {
         DataCriteriaAPI.trigger(CalibratedAccess.id("remote_used"), player, Parameters.block(world, targetPos), interdimensional);
     }
 
-    public static Validation validateStateAndGetScreen(PlayerEntity player, World world, BlockPos pos, BlockState state) {
+    public static NamedScreenHandlerFactory validateStateAndGetScreen(PlayerEntity player, World world, BlockPos pos, BlockState state) {
         if (state.isIn(OVERRIDES) == CAGameRules.isAccessAllowed(world)) {
-            return new Validation(ValidationResult.FAIL, null);
+            return null;
         }
-        BlockEntity entity = world.getBlockEntity(pos);
-        boolean serverExclusive = false;
-        if (entity instanceof LockableContainerBlockEntity lockable) {
-            // checkUnlocked only functions serverside
-            var result = world.isClient()
-                    ? ValidationResult.FAIL_CLIENT
-                    : !lockable.checkUnlocked(player)
-                            ? ValidationResult.FAIL
-                            : null;
-            if (result != null) {
-                return new Validation(result, null);
-            }
-            serverExclusive = true;
-        }
-        var screen = entity instanceof NamedScreenHandlerFactory screenHandlerFactory
-                ? screenHandlerFactory
-                : state.createScreenHandlerFactory(world, pos);
-        if (screen == null) {
-            return new Validation(ValidationResult.FAIL, null);
-        }
-        var result = serverExclusive ? ValidationResult.SUCCESS_SERVER : ValidationResult.SUCCESS;
-        return new Validation(result, screen);
+        return BlockReachAPI.getScreen(world, pos, player);
     }
 
-    public static Pair<ActionResult, Boolean> canUseOnBlock(PlayerEntity player, World world, BlockPos pos, BlockState state) {
+    public static ActionResult canUseOnBlock(PlayerEntity player, World world, BlockPos pos, BlockState state) {
         if (CalibratedAccessAPI.hasListener(state.getBlock())) {
-            return new Pair<>(ActionResult.SUCCESS, false);
+            return ActionResult.SUCCESS;
         }
         var validation = validateStateAndGetScreen(player, world, pos, state);
-        return switch (validation.result()) {
-            case FAIL, FAIL_CLIENT -> {
-                ActionResult result = validation.result() == ValidationResult.FAIL
-                        ? ActionResult.PASS
-                        : ActionResult.CONSUME; // FAIL_CLIENT
-                yield new Pair<>(result, false);
-            }
-            case SUCCESS, SUCCESS_SERVER ->
-                    new Pair<>(ActionResult.SUCCESS, validation.result() == ValidationResult.SUCCESS_SERVER);
-        };
+        return validation != null
+                ? ActionResult.SUCCESS
+                : ActionResult.CONSUME;
     }
 
     @Override
@@ -124,14 +94,17 @@ public class RemoteItem extends Item implements FabricItem {
         BlockPos pos = context.getBlockPos();
         BlockState state = context.getWorld().getBlockState(pos);
         var result = canUseOnBlock(context.getPlayer(), context.getWorld(), pos, state);
-        if (result.getLeft() == ActionResult.SUCCESS) {
+        if (result == ActionResult.SUCCESS) {
             NbtCompound nbt = context.getStack().getOrCreateNbt();
-            calibrate(nbt, context.getPlayer(), context.getWorld(), pos, state, result.getRight());
+            calibrate(nbt, context.getPlayer(), context.getWorld(), pos, state);
         }
-        return result.getLeft();
+        else if (context.getPlayer() instanceof ServerPlayerEntity serverPlayer) {
+            fail(context.getStack().getOrCreateNbt(), true, serverPlayer, context.getWorld(), RemoteUseResult.CANNOT_SYNC);
+        }
+        return result;
     }
 
-    public void calibrate(NbtCompound nbt, PlayerEntity player, World world, BlockPos pos, BlockState state, boolean serverExclusive) {
+    public void calibrate(NbtCompound nbt, PlayerEntity player, World world, BlockPos pos, BlockState state) {
         nbt.putLong("SyncedPos", pos.asLong());
         nbt.putString("SyncedWorld", world.getRegistryKey().getValue().toString());
         syncBlock(nbt, state.getBlock());
@@ -145,13 +118,16 @@ public class RemoteItem extends Item implements FabricItem {
         }
         UUID session = UUID.randomUUID();
         nbt.putUuid("Session", session);
-        remoteUser.calibrated$addSession(session, pos, CAGameRules.getMaxSessions(world));
+        // Handle block reaches
+        var removed = remoteUser.calibrated$addSession(session, pos, world, CAGameRules.getMaxSessions(world));
+        for (var removedData : removed) {
+            BlockReachAPI.removePositionFromWorld(player, removedData.syncedPos, removedData.worldKey);
+        }
+        BlockReachAPI.addPositionInWorld(player, pos, world);
         if (!remoteType.unlimited()) {
             nbt.putInt("Accesses", remoteType.accesses());
         }
-        if (world.isClient() || serverExclusive) {
-            playSound(CASoundEvents.REMOTE_SYNC, 0.85f + world.random.nextFloat() * 0.3f, player, world);
-        }
+        playSound(CASoundEvents.REMOTE_SYNC, 0.85f + world.random.nextFloat() * 0.3f, player, world);
         player.incrementStat(CREATE_SESSION);
     }
 
@@ -170,8 +146,7 @@ public class RemoteItem extends Item implements FabricItem {
             NbtCompound nbt = stack.getOrCreateNbt();
             RemoteUseResult result = use(stack, nbt, world, player);
             if (result.isError()) {
-                fail(nbt, result.eraseInfo(), player, world);
-                user.sendMessage(result.getErrorMessage(), true);
+                fail(nbt, result.eraseInfo(), player, world, result);
             }
             return TypedActionResult.pass(stack);
         }
@@ -207,7 +182,7 @@ public class RemoteItem extends Item implements FabricItem {
         if (targetWorld == null) {
             return RemoteUseResult.INVALID_WORLD;
         }
-        // Prevents accesses to target blovks with different IDs if the gamerule disallows it
+        // Prevents accesses to target blocks with different IDs if the gamerule disallows it
         BlockPos pos = BlockPos.fromLong(nbt.getLong("SyncedPos"));
         BlockState state = targetWorld.getBlockState(pos);
         Identifier syncedId = new Identifier(nbt.getString("SyncedId"));
@@ -224,7 +199,7 @@ public class RemoteItem extends Item implements FabricItem {
         }
         // If there were no invokers and the screen cannot be found, desync
         NamedScreenHandlerFactory screen = invokedResult == null
-                ? validateStateAndGetScreen(player, targetWorld, pos, state).screen()
+                ? validateStateAndGetScreen(player, targetWorld, pos, state)
                 : null;
         if (invokedResult == null && screen == null) {
             return RemoteUseResult.DESYNC;
@@ -260,7 +235,7 @@ public class RemoteItem extends Item implements FabricItem {
         player.incrementStat(ACCESS);
     }
 
-    public void fail(NbtCompound nbt, boolean eraseInfo, ServerPlayerEntity player, World world) {
+    public void fail(NbtCompound nbt, boolean eraseInfo, ServerPlayerEntity player, World world, RemoteUseResult result) {
         // If the remote needs to be recalibrated anyways
         if (eraseInfo) {
             nbt.remove("SyncedPos");
@@ -277,12 +252,14 @@ public class RemoteItem extends Item implements FabricItem {
         nbt.putInt("VisualTicks", STATUS_TICKS);
         nbt.putInt("CustomModelData", 2);
         player.getItemCooldownManager().set(this, 40);
+        player.sendMessage(result.getErrorMessage(), true);
         playSound(CASoundEvents.REMOTE_FAIL, 1.0f, player, world);
     }
 
     public static void playSound(SoundEvent event, float pitch, PlayerEntity player, World world) {
-        world.playSound(player, player.getX(), player.getY(), player.getZ(), event, SoundCategory.PLAYERS, 1.0f, pitch);
-        player.playSound(event, SoundCategory.MASTER, 1.0f, pitch);
+        if (!world.isClient()) {
+            world.playSound(null, player.getX(), player.getY(), player.getZ(), event, SoundCategory.PLAYERS, 1.0f, pitch);
+        }
     }
 
     @Override
@@ -361,13 +338,4 @@ public class RemoteItem extends Item implements FabricItem {
         registerStat(ACCESS);
         registerStat(CREATE_SESSION);
     }
-
-    public enum ValidationResult {
-        FAIL,
-        FAIL_CLIENT,
-        SUCCESS,
-        SUCCESS_SERVER
-    }
-
-    public record Validation(ValidationResult result, NamedScreenHandlerFactory screen) {}
 }

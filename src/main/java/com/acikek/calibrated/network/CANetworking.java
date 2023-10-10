@@ -26,7 +26,7 @@ public class CANetworking {
         buf.writeUuid(session);
         buf.writeBoolean(remove);
         if (!remove) {
-            data.write(buf);
+            buf.encodeAsJson(SessionData.CODEC, data);
         }
         ServerPlayNetworking.send(to, MODIFY_SESSION, buf);
     }
@@ -44,17 +44,25 @@ public class CANetworking {
     public static void registerClient() {
         ClientPlayNetworking.registerGlobalReceiver(MODIFY_SESSION, (client, handler, buf, responseSender) -> {
             RemoteUser remoteUser = ((RemoteUser) client.player);
-            UUID session = buf.readUuid();
-            if (buf.readBoolean()) {
-                remoteUser.calibrated$getSessions().remove(session);
-            }
-            else {
-                remoteUser.calibrated$getSessions().put(session, SessionData.read(buf));
-            }
+            final UUID session = buf.readUuid();
+            final boolean remove = buf.readBoolean();
+            final SessionData data = !remove ? buf.decodeAsJson(SessionData.CODEC) : null;
+            client.execute(() -> {
+                if (remove) {
+                    remoteUser.calibrated$getSessions().remove(session);
+                }
+                else {
+                    remoteUser.calibrated$getSessions().put(session, data);
+                }
+            });
         });
         ClientPlayNetworking.registerGlobalReceiver(SET_GAMERULES, (client, handler, buf, responseSender) -> {
-            CalibratedAccessClient.allowAccess = buf.readBoolean();
-            CalibratedAccessClient.maxSessions = buf.readInt();
+            final boolean allowAccess = buf.readBoolean();
+            final int maxSessions = buf.readInt();
+            client.execute(() -> {
+                CalibratedAccessClient.allowAccess = allowAccess;
+                CalibratedAccessClient.maxSessions = maxSessions;
+            });
         });
     }
 }

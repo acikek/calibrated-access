@@ -19,6 +19,8 @@ repositories {
         name = "JitPack"
         url = "https://jitpack.io"
     }
+
+    mavenLocal()
 }
 
 dependencies {
@@ -38,6 +40,8 @@ dependencies {
         modRuntimeOnly("maven.modrinth:pehkui:3.7.8+1.14.4-1.20.1")
         modApi("com.github.Virtuoel:KanosConfig:0.4.1")
     }
+
+    modImplementation include("com.acikek:block-reach-api:0.1.0")
 }
 
 loom {
