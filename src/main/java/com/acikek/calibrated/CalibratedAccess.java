@@ -45,5 +45,6 @@ public class CalibratedAccess implements ModInitializer {
         CASoundEvents.register();
         CAGameRules.register();
         RemoteItem.registerStats();
+        CAVanillaIntegration.register();
     }
 }
