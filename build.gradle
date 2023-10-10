@@ -20,7 +20,10 @@ repositories {
         url = "https://jitpack.io"
     }
 
-    mavenLocal()
+    maven {
+        name = "acikek Maven"
+        url = "https://maven.acikek.com/snapshots"
+    }
 }
 
 dependencies {
@@ -41,7 +44,8 @@ dependencies {
         modApi("com.github.Virtuoel:KanosConfig:0.4.1")
     }
 
-    modImplementation include("com.acikek:block-reach-api:0.1.0")
+    // Block Reach API
+    modImplementation include("com.acikek:blockreachapi:${project.bra_version}")
 }
 
 loom {
