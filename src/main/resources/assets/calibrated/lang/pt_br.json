@@ -4,6 +4,7 @@
   "item.calibrated.skilled_accessor": "Acessador adepto",
   "item.calibrated.expert_accessor": "Acessador especialista",
   "item.calibrated.unlimited_accessor": "Acessador ilimitado",
+  "error.calibrated.cannot_sync": "Não se pode sincronizar com esse bloco!",
   "error.calibrated.cannot_access": "Ainda não sincronizado!",
   "error.calibrated.invalid_session": "As sessões não correspondem!",
   "error.calibrated.invalid_world": "Não accessível desse mundo!",
@@ -23,9 +24,9 @@
   "tooltip.calibrated.synced_name": "Sincronizado a %s",
   "tooltip.calibrated.accesses": "Acessos: %s / %s",
   "tag.calibrated.remotes": "Acessadores remotos",
-  "gamerule.allowCalibratedAccess": "Deixar Acesso Calibrado",
-  "gamerule.maxRemoteSessions": "Quantidade de Acessadores que podem ser sincronizados num momento",
-  "gamerule.allowSyncedIdMismatch": "Deixar o bloco alvo de um Acessador ser diferente",
+  "gamerule.calibrated:allowCalibratedAccess": "Deixar Acesso Calibrado",
+  "gamerule.calibrated:maxRemoteSessions": "Quantidade de Acessadores que podem ser sincronizados num momento",
+  "gamerule.calibrated:allowSyncedIdMismatch": "Deixar o bloco alvo de um Acessador ser diferente",
   "stat.calibrated.create_session": "Acessadores sincronizados",
   "stat.calibrated.remote": "Vezes acessados remotamente"
 }

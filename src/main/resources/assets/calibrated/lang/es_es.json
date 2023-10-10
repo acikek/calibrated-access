@@ -4,6 +4,7 @@
   "item.calibrated.skilled_accessor": "Enlazador hábil",
   "item.calibrated.expert_accessor": "Enlazador experto",
   "item.calibrated.unlimited_accessor": "Enlazador ilimitado",
+  "error.calibrated.cannot_sync": "¡No se puede sincronizar con este bloque!",
   "error.calibrated.cannot_access": "¡Todavía no está sincronizado!",
   "error.calibrated.invalid_session": "¡Las sesiones no corresponden!",
   "error.calibrated.invalid_world": "¡No accesible de este mundo!",
@@ -23,9 +24,9 @@
   "tooltip.calibrated.synced_name": "Sincronizado a %s",
   "tooltip.calibrated.accesses": "Accesos: %s / %s",
   "tag.calibrated.remotes": "Enlazadores remotos",
-  "gamerule.allowCalibratedAccess": "Dejar Acceso Calibrado",
-  "gamerule.maxRemoteSessions": "Cantidad de Enlazadores que pueden ser sincronizados en un momento",
-  "gamerule.allowSyncedIdMismatch": "Dejar el bloque objetivo de un Enlazador ser diferente",
+  "gamerule.calibrated:allowCalibratedAccess": "Dejar Acceso Calibrado",
+  "gamerule.calibrated:maxRemoteSessions": "Cantidad de Enlazadores que pueden ser sincronizados en un momento",
+  "gamerule.calibrated:allowSyncedIdMismatch": "Dejar el bloque objetivo de un Enlazador ser diferente",
   "stat.calibrated.create_session": "Enlazadores sincronizados",
   "stat.calibrated.remote": "Veces accesados remotamente"
 }
